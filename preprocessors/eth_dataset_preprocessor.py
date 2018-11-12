@@ -7,43 +7,37 @@ from general_utils import get_image_size
 
 
 class EthDatasetPreprosessor:
-    """Preprocessor for ETH dataset.
-
-    """
+    """Preprocessor for ETH dataset."""
 
     def __init__(self, data_dir, dataset_kind):
         self._data_dir = data_dir
         self.image_size = get_image_size(dataset_kind)
 
-        pass
-
-    def preprocess_frame_data(self):
-        # load homography matrix and raw pedestrians trajectories
+        # read homography matrix
         homography_file = os.path.join(self.data_dir, "H.txt")
-        obsmat_file = os.path.join(self.data_dir, "obsmat.txt")
+        self.homography = np.genfromtxt(homography_file)
 
-        H = np.genfromtxt(homography_file)
+        # read trajectory data
+        obsmat_file = os.path.join(self.data_dir, "obsmat.txt")
         obs_columns = ["frame", "id", "px", "pz", "py", "vx", "vz", "vy"]
         obs_df = pd.DataFrame(np.genfromtxt(obsmat_file), columns=obs_columns)
-
         # remain only (frame index, pedestrian id, position x, position y)
-        pos_df_raw = obs_df[["frame", "id", "px", "py"]]
+        self.raw_df = obs_df[["frame", "id", "px", "py"]]
 
-        # ----------------------
+    def preprocess_frame_data(self):
         # position preprocessing
-        # ----------------------
-        xy = np.array(pos_df_raw[["px", "py"]])
+        xy = np.array(self.raw_df[["px", "py"]])
 
         # world xy to image xy: inverse mapping of homography
-        xy = self._world_to_image_xy(xy, H)
+        xy = self._world_to_image_xy(xy, self.homography)
 
         # normalize
         xy = xy / self.image_size
 
         # construct preprocessed df
         pos_df_preprocessed = pd.DataFrame({
-            "frame": pos_df_raw["frame"],
-            "id": pos_df_raw["id"],
+            "frame": self.raw_df["frame"],
+            "id": self.raw_df["id"],
             "x": xy[:, 0],
             "y": xy[:, 1]
         })
