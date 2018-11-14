@@ -582,14 +582,16 @@ if __name__ == '__main__':
         a_t = W_a_relu(H_t)
         emb_t = tf.concat([e_t, a_t], axis=-1)
 
+        prev_states_t = [[prev_h_t[:, i], prev_c_t[:, i]] for i in
+                         range(args.max_n_peds)]
+
         for ped_index in range(args.max_n_peds):
             # build concatenated embedding states as LSTM input
             emb_it = emb_t[:, ped_index, :]
             emb_it = tf.reshape(emb_it, (batch_size, 1, 2 * args.emb_dim))
 
-            prev_states_it = [prev_h_t[:, ped_index], prev_c_t[:, ped_index]]
-            lstm_output, h_it, c_it = lstm_layer(emb_it,
-                                                 initial_state=prev_states_it)
+            lstm_output, h_it, c_it = lstm_layer(
+                emb_it, initial_state=prev_states_t[ped_index])
 
             h_t.append(h_it)
             c_t.append(c_it)
@@ -601,7 +603,6 @@ if __name__ == '__main__':
         h_t = _stack_permute_axis_zero(h_t)
         c_t = _stack_permute_axis_zero(c_t)
         o_t = _stack_permute_axis_zero(o_t)
-
 
         prev_h_t, prev_c_t = h_t, c_t
 
