@@ -576,7 +576,6 @@ if __name__ == '__main__':
                               (args.grid_side ** 2) * args.lstm_state_dim)
         H_t = tf.convert_to_tensor(H_t, dtype=tf.float32)
 
-        # TODO: emb_t computation
         pos_t = x_t[..., 1:]
         e_t = W_e_relu(pos_t)
         a_t = W_a_relu(H_t)
