@@ -603,9 +603,119 @@ if __name__ == '__main__':
         c_t = _stack_permute_axis_zero(c_t)
         o_t = _stack_permute_axis_zero(o_t)
 
+        o_obs_batch.append(o_t)
+
         prev_h_t, prev_c_t = h_t, c_t
 
-    o_obs_batch.append(o_t)
+    # (b, obs_len, max_n_peds, out_dim)
+    o_obs_batch = _stack_permute_axis_zero(o_obs_batch)
+
+    # --------------------------------------------------------------------------
+    # prediction step
+    # --------------------------------------------------------------------------
+    # この時点でprev_h_t, prev_c_tにはobs_lenの最終的な状態が残っている
+
+    # (b, obs_len, max_n_peds, pxy_dim) => (b, max_n_peds, pxy_dim)
+    x_obs_t_final = x_input[:, -1, :, :]
+    # (b, max_n_peds, pxy_dim) => (b, max_n_peds)
+    pid_obs_t_final = x_obs_t_final[:, :, 0]
+    # (b, max_n_peds) => (b, max_n_peds, 1)
+    pid_obs_t_final = tf.expand_dims(pid_obs_t_final, axis=-1)
+
+    from tf_normal_sampler import normal2d_sample
+
+    x_pred_batch = []
+    o_pred_batch = []
+    for t in range(args.pred_len):
+        # At the first prediction frame,
+        # use the latest output of the observation step
+        if t == 0:
+            # (b, obs_len, max_n_peds, out_dim) => (b, max_n_peds, out_dim)
+            prev_o_t = o_obs_batch[:, -1, :, :]
+
+        # TODO: implement normal2d_sample() for eager mode
+        pred_pos_t = normal2d_sample(prev_o_t)
+        # assume all the pedestrians in the final observation frame are
+        # exist in the prediction frames.
+        x_pred_t = Concatenate(axis=2)([pid_obs_t_final, pred_pos_t])
+
+        grid_t = tf_grid_mask(x_pred_t,
+                              get_image_size(config.test_dataset_kind),
+                              config.n_neighbor_pixels, config.grid_side)
+
+        h_t, c_t, o_t = [], [], []
+
+        # compute $H_t$
+        # (n_samples, max_n_peds, (grid_side ** 2) * lstm_state_dim)
+        H_t = self._compute_social_tensor(grid_t, prev_h_t, config)
+
+        for i in range(config.max_n_peds):
+            print("(t, li):", t, i)
+
+            prev_o_it = Lambda(lambda o_t: o_t[:, i, :])(prev_o_t)
+            H_it = Lambda(lambda H_t: H_t[:, i, ...])(H_t)
+
+            # pred_pos_it: (batch_size, 2)
+            pred_pos_it = normal2d_sample(prev_o_it)
+
+            # compute e_it and a_it
+            # e_it: (batch_size, emb_dim)
+            # a_it: (batch_size, emb_dim)
+            e_it = self.W_e_relu(pred_pos_it)
+            a_it = self.W_a_relu(H_it)
+
+            # build concatenated embedding states for LSTM input
+            # emb_it: (batch_size, 1, 2 * emb_dim)
+            emb_it = Concatenate()([e_it, a_it])
+            emb_it = Reshape((1, 2 * config.emb_dim))(emb_it)
+
+            # initial_state = h_i_tになっている
+            # h_i_tを次のx_t_pに対してLSTMを適用するときのinitial_stateに使えば良い
+            prev_states_it = [prev_h_t[:, i], prev_c_t[:, i]]
+            lstm_output, h_it, c_it = self.lstm_layer(emb_it,
+                                                      prev_states_it)
+
+            h_t.append(h_it)
+            c_t.append(c_it)
+
+            # compute output_it, which shape is (batch_size, 5)
+            o_it = self.W_p(lstm_output)
+            o_t.append(o_it)
+
+        # convert lists of h_it/c_it/o_it to h_t/c_t/o_t respectively
+        h_t = _stack_permute_axis_zero(h_t)
+        c_t = _stack_permute_axis_zero(c_t)
+        o_t = _stack_permute_axis_zero(o_t)
+
+        o_pred_batch.append(o_t)
+        x_pred_batch.append(x_pred_t)
+
+        # current => previous
+        prev_h_t = h_t
+        prev_c_t = c_t
+        prev_o_t = o_t
+
+    # convert list of output_t to output_batch
+    o_pred_batch = _stack_permute_axis_zero(o_pred_batch)
+    x_pred_batch = _stack_permute_axis_zero(x_pred_batch)
+
+    # o_concat_batch = Lambda(lambda os: tf.concat(os, axis=1))(
+    #     [o_obs_batch, o_pred_batch])
+
+    # 本当に学習に必要なモデルはこっちのはず
+    self.train_model = Model(
+        [self.x_input, self.grid_input, self.zeros_input],
+        o_pred_batch
+    )
+
+    lr = 0.003
+    optimizer = RMSprop(lr=lr)
+    self.train_model.compile(optimizer, self._compute_loss)
+
+    self.sample_model = Model(
+        [self.x_input, self.grid_input, self.zeros_input],
+        x_pred_batch
+    )
 
     # ped_index = 1
     # prev_states_it = [prev_h_t[:, ped_index], prev_c_t[:, ped_index]]
