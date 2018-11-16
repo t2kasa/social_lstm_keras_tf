@@ -142,7 +142,6 @@ if __name__ == '__main__':
             # pred_pos_it: (batch_size, 2)
             pred_pos_it = normal2d_sample(prev_o_it)
 
-            # compute e_it and a_it
             # e_it: (batch_size, emb_dim)
             # a_it: (batch_size, emb_dim)
             e_it = W_e_relu(pred_pos_it)
@@ -150,8 +149,8 @@ if __name__ == '__main__':
 
             # build concatenated embedding states for LSTM input
             # emb_it: (batch_size, 1, 2 * emb_dim)
-            emb_it = Concatenate()([e_it, a_it])
-            emb_it = Reshape((1, 2 * args.emb_dim))(emb_it)
+            emb_it = tf.concat([e_it, a_it], axis=1)
+            emb_it = tf.reshape(emb_it, (batch_size, 1, 2 * args.emb_dim))
 
             # initial_state = h_i_tになっている
             # h_i_tを次のx_t_pに対してLSTMを適用するときのinitial_stateに使えば良い
@@ -181,29 +180,14 @@ if __name__ == '__main__':
     # convert list of output_t to output_batch
     o_pred_batch = _stack_permute_axis_zero(o_pred_batch)
     x_pred_batch = _stack_permute_axis_zero(x_pred_batch)
-
-    # o_concat_batch = Lambda(lambda os: tf.concat(os, axis=1))(
-    #     [o_obs_batch, o_pred_batch])
-
-    # 本当に学習に必要なモデルはこっちのはず
-    self.train_model = Model(
-        [self.x_input, self.grid_input, self.zeros_input],
-        o_pred_batch
-    )
+    o_concat_batch = tf.concat([o_obs_batch, o_pred_batch], axis=1)
 
     lr = 0.003
-    optimizer = RMSprop(lr=lr)
-    self.train_model.compile(optimizer, self._compute_loss)
 
-    self.sample_model = Model(
-        [self.x_input, self.grid_input, self.zeros_input],
-        x_pred_batch
-    )
-
-    # ped_index = 1
-    # prev_states_it = [prev_h_t[:, ped_index], prev_c_t[:, ped_index]]
-    #
-    # emb_it = tf.zeros((1, 1, 2 * args.emb_dim))
-    # lstm_output, h_it, c_it = lstm_layer(emb_it, prev_states_it)
-
-    # print(lstm_output.shape)
+    # # 本当に学習に必要なモデルはこっちのはず
+    # self.train_model = Model([self.x_input, self.grid_input, self.zeros_input],
+    #                          o_pred_batch)
+    # optimizer = RMSprop(lr=lr)
+    # self.train_model.compile(optimizer, self._compute_loss)
+    # self.sample_model = Model([self.x_input, self.grid_input, self.zeros_input],
+    #                           x_pred_batch)
