@@ -48,19 +48,18 @@ class SingleDataset:
             cf_data = frame_data[i:i + self.seq_len, ...]
             nf_data = frame_data[i + 1:i + self.seq_len + 1, ...]
 
-            ped_col_index = 0
-            # collect ped ids where the ped id exists in the all frame of
-            # the current sequence and the next sequence
-            cf_ped_ids = reduce(set.intersection,
-                                [set(nf_ped_ids) for nf_ped_ids in
-                                 cf_data[..., ped_col_index]])
-
-            nf_ped_ids = reduce(set.intersection,
-                                [set(nf_ped_ids) for nf_ped_ids in
-                                 nf_data[..., ped_col_index]])
+            pid_col = 0
+            # collect pedestrian ids where the pedestrians exist in the
+            # all frames of the current and next sequence
+            cf_ped_ids = reduce(
+                set.intersection,
+                [set(cf_pids) for cf_pids in cf_data[..., pid_col]])
+            nf_ped_ids = reduce(
+                set.intersection,
+                [set(nf_pids) for nf_pids in nf_data[..., pid_col]])
 
             ped_ids = list(cf_ped_ids & nf_ped_ids - {0})
-            # at current & next frame, there are no pedestrians
+            # if there are no pedestrians
             if not ped_ids:
                 continue
 
