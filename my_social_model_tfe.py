@@ -1,6 +1,9 @@
+from argparse import Namespace
+
 import numpy as np
 import tensorflow as tf
-from argparse import Namespace
+
+from tfe_normal_sampler import normal2d_sample
 
 
 def _stack_permute_axis_zero(xs):
@@ -23,10 +26,6 @@ if __name__ == '__main__':
     grid_input = np.random.randn(batch_size, args.obs_len, args.max_n_peds,
                                  args.max_n_peds, args.grid_side_squared)
     grid_input = tf.convert_to_tensor(grid_input, dtype=tf.float32)
-
-    # x_input = tf.keras.Input((3, 52, 3))
-    # grid_input = tf.keras.Input((args.obs_len, args.max_n_peds, args.max_n_peds,
-    #                              args.grid_side_squared))
 
     # define layers
     lstm_layer = tf.keras.layers.LSTM(
@@ -100,9 +99,6 @@ if __name__ == '__main__':
     pid_obs_t_final = x_obs_t_final[:, :, 0]
     # (b, max_n_peds) => (b, max_n_peds, 1)
     pid_obs_t_final = tf.expand_dims(pid_obs_t_final, axis=-1)
-
-    # from tf_normal_sampler import normal2d_sample
-    from tfe_normal_sampler import normal2d_sample
 
     x_pred_batch = []
     o_pred_batch = []
