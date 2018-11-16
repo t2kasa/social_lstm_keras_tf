@@ -63,11 +63,8 @@ def normal2d_sample(outputs):
     samples = mvn.sample()
     sample_dim = tf.shape(samples).numpy()[-1]
 
-    expected_sample_shape = tf.concat([original_output_shape, [sample_dim]],
-                                      axis=0)
-
-    if expected_sample_shape[0] is None:
-        expected_sample_shape[0] = -1
+    expected_sample_shape = tf.concat(
+        [original_output_shape[:-1], [sample_dim]], axis=0)
 
     samples = tf.reshape(samples, expected_sample_shape)
     return samples
