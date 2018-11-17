@@ -6,6 +6,7 @@ import tensorflow as tf
 from tfe_normal_sampler import normal2d_sample
 from grid_tfe import compute_social_tensor
 
+
 def _stack_permute_axis_zero(xs):
     xs = tf.stack(xs, axis=0)
     perm = [1, 0] + list(range(2, xs.shape.ndims))
@@ -16,26 +17,25 @@ def _stack_permute_axis_zero(xs):
 if __name__ == '__main__':
     tf.enable_eager_execution()
     args = Namespace(obs_len=3, pred_len=2, max_n_peds=52, pxy_dim=3,
-                     grid_side=4, lstm_state_dim=32, emb_dim=16, out_dim=5)
-    args.grid_side_squared = args.grid_side ** 2
+                     cell_side=0.5, n_side_cells=4, n_states=32, emb_dim=16,
+                     out_dim=5)
+    args.n_side_cells_squared = args.n_side_cells ** 2
 
     batch_size = 1
     x_input = np.random.randn(batch_size, args.obs_len, args.max_n_peds,
                               args.pxy_dim)
     x_input = tf.convert_to_tensor(x_input, dtype=tf.float32)
     grid_input = np.random.randn(batch_size, args.obs_len, args.max_n_peds,
-                                 args.max_n_peds, args.grid_side_squared)
+                                 args.max_n_peds, args.n_side_cells_squared)
     grid_input = tf.convert_to_tensor(grid_input, dtype=tf.float32)
 
     # supports only if batch size equals to 1.
     assert tf.shape(x_input).numpy()[0] == 1
     assert tf.shape(grid_input).numpy()[0] == 1
-    x_input = x_input[0]
-    grid_input = grid_input[0]
 
     # define layers
     lstm_layer = tf.keras.layers.LSTM(
-        args.lstm_state_dim, return_state=True)
+        args.n_states, return_state=True)
     W_e_relu = tf.keras.layers.Dense(args.emb_dim, activation="relu")
     W_a_relu = tf.keras.layers.Dense(args.emb_dim, activation="relu")
     W_p = tf.keras.layers.Dense(args.out_dim)
@@ -44,8 +44,8 @@ if __name__ == '__main__':
     # _build_model()
     # --------------------------------------------------------------------------
 
-    prev_h_t = tf.zeros((1, args.max_n_peds, args.lstm_state_dim))
-    prev_c_t = tf.zeros((1, args.max_n_peds, args.lstm_state_dim))
+    prev_h_t = tf.zeros((1, args.max_n_peds, args.n_states))
+    prev_c_t = tf.zeros((1, args.max_n_peds, args.n_states))
 
     o_obs_batch = []
     for t in range(args.obs_len):
@@ -56,8 +56,13 @@ if __name__ == '__main__':
         o_t = []
 
         # social tensor
+        positions = x_t[0, :, 1:]
+        hidden_states = prev_h_t[0]
+        social_tensors_t = compute_social_tensor(
+            positions, hidden_states, args.cell_side, args.n_side_cells)
+
         H_t = np.random.randn(batch_size, args.max_n_peds,
-                              (args.grid_side ** 2) * args.lstm_state_dim)
+                              (args.n_side_cells ** 2) * args.n_states)
         H_t = tf.convert_to_tensor(H_t, dtype=tf.float32)
 
         pos_t = x_t[..., 1:]
@@ -125,14 +130,14 @@ if __name__ == '__main__':
 
         # grid_t = tf_grid_mask(x_pred_t,
         #                       get_image_size(config.test_dataset_kind),
-        #                       config.n_neighbor_pixels, config.grid_side)
+        #                       config.n_neighbor_pixels, config.n_side_cells)
 
         h_t, c_t, o_t = [], [], []
 
-        # (n_samples, max_n_peds, (grid_side ** 2) * lstm_state_dim)
+        # (n_samples, max_n_peds, (n_side_cells ** 2) * n_states)
         # social tensor
         H_t = np.random.randn(batch_size, args.max_n_peds,
-                              (args.grid_side ** 2) * args.lstm_state_dim)
+                              (args.n_side_cells ** 2) * args.n_states)
         H_t = tf.convert_to_tensor(H_t, dtype=tf.float32)
 
         for i in range(args.max_n_peds):
