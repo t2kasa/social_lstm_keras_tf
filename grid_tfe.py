@@ -3,7 +3,7 @@ import tensorflow as tf
 
 
 def compute_social_tensor(positions, hidden_states, cell_side: float,
-                          n_grid_cells: int):
+                          n_side_cells: int):
     """Computes social tensor.
 
     :param positions: (n_pedestrians, 2).
@@ -11,19 +11,18 @@ def compute_social_tensor(positions, hidden_states, cell_side: float,
     :param hidden_states: (n_pedestrians, n_states).
         The hidden states of LSTM.
     :param cell_side: side of one cell.
-    :param n_grid_cells: The number of cells tiled on the grid side. That is,
+    :param n_side_cells: The number of cells tiled on the grid side. That is,
         the tiles on the grid is `n_grid_cells ** 2` tiles.
     :return: (n_pedestrians, n_grid_cells, n_grid_cells, n_states)
         social tensors.
     """
     n_pedestrians = tf.shape(positions).numpy()[0]
     n_states = tf.shape(hidden_states).numpy()[1]
+    n_half_side_cells = n_side_cells // 2
 
-    n_half_grid_cells = n_grid_cells // 2
-
-    cell_borders = tf.linspace(-cell_side * n_half_grid_cells,
-                               cell_side * n_half_grid_cells,
-                               n_grid_cells + 1)
+    cell_borders = tf.linspace(-cell_side * n_half_side_cells,
+                               cell_side * n_half_side_cells,
+                               n_side_cells + 1)
 
     indices = np.arange(tf.shape(positions).numpy()[0])
 
@@ -44,22 +43,22 @@ def compute_social_tensor(positions, hidden_states, cell_side: float,
                                       cell_borders.numpy()) - 1
         neighbor_mask = tf.reduce_all(
             tf.logical_and(0 <= cell_xy_indices,
-                           cell_xy_indices < n_grid_cells),
+                           cell_xy_indices < n_side_cells),
             axis=1)
 
         neighbor_xy_indices = tf.boolean_mask(cell_xy_indices, neighbor_mask)
         neighbor_hidden_states = tf.boolean_mask(other_hidden_states,
                                                  neighbor_mask)
 
-        social_tensor_i = [[] for _ in range(n_grid_cells ** 2)]
+        social_tensor_i = [[] for _ in range(n_side_cells ** 2)]
         for xy_index, h in zip(neighbor_xy_indices, neighbor_hidden_states):
-            cell_index = xy_index[1] * n_grid_cells + xy_index[0]
+            cell_index = xy_index[1] * n_side_cells + xy_index[0]
             social_tensor_i[cell_index].append(h)
 
         social_tensor_i = [tf.reduce_sum(s, axis=0) if len(s) != 0
                            else tf.zeros(n_states) for s in social_tensor_i]
         social_tensor_i = tf.reshape(tf.stack(social_tensor_i, axis=0),
-                                     (-1, n_grid_cells, n_grid_cells))
+                                     (n_side_cells, n_side_cells, n_states))
 
         social_tensors.append(social_tensor_i)
 
