@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 from tfe_normal_sampler import normal2d_sample
-
+from grid_tfe import compute_social_tensor
 
 def _stack_permute_axis_zero(xs):
     xs = tf.stack(xs, axis=0)
@@ -26,6 +26,12 @@ if __name__ == '__main__':
     grid_input = np.random.randn(batch_size, args.obs_len, args.max_n_peds,
                                  args.max_n_peds, args.grid_side_squared)
     grid_input = tf.convert_to_tensor(grid_input, dtype=tf.float32)
+
+    # supports only if batch size equals to 1.
+    assert tf.shape(x_input).numpy()[0] == 1
+    assert tf.shape(grid_input).numpy()[0] == 1
+    x_input = x_input[0]
+    grid_input = grid_input[0]
 
     # define layers
     lstm_layer = tf.keras.layers.LSTM(
