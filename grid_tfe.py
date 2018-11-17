@@ -1,77 +1,91 @@
-import tensorflow as tf
 import numpy as np
-
-tf.enable_eager_execution()
-
-states_dim = 2
-
-hidden_states = np.array([
-    [0.5, 0.5],
-    [0.125, 0.125],
-    [0.25, 0.25],
-    [0.25, 0.75],
-    [0.75, 0.25]])
-
-pos = np.array([
-    [0.5, 0.5],
-    [0.125, 0.125],
-    [0.25, 0.25],
-    [0.25, 0.75],
-    [10.0, 10.0]])
-
-hidden_states = tf.convert_to_tensor(hidden_states, dtype=tf.float32)
-pos = tf.convert_to_tensor(pos, dtype=tf.float32)
-
-cell_side = 0.5
-# Construct (n_grid_cells, n_grid_cells) grid.
-n_grid_cells = 2
-n_half_grid_cells = n_grid_cells // 2
-
-cell_borders = tf.linspace(-cell_side * n_half_grid_cells,
-                           cell_side * n_half_grid_cells,
-                           n_grid_cells + 1)
-
-indices = np.arange(tf.shape(pos).numpy()[0])
-
-i = 0
-pos_i = tf.boolean_mask(pos, indices == i)
-other_pos = tf.boolean_mask(pos, indices != i)
-other_hidden_states = tf.boolean_mask(hidden_states, indices != i)
-
-# Social tensor computation
-# remain only neighbor pedestrians
-
-pos_diff = other_pos - pos_i
-# so bucketize() in tensorflow raises an error,
-# use digitize() in numpy as workaround.
-cell_xy_indices = np.digitize(pos_diff.numpy(), cell_borders.numpy()) - 1
-neighbor_mask = tf.reduce_all(
-    tf.logical_and(0 <= cell_xy_indices, cell_xy_indices < n_grid_cells),
-    axis=1)
-
-neighbor_pos_diff = tf.boolean_mask(pos_diff, neighbor_mask)
-neighbor_xy_indices = tf.boolean_mask(cell_xy_indices, neighbor_mask)
-neighbor_hidden_states = tf.boolean_mask(other_hidden_states, neighbor_mask)
-
-# cell_xy_indices = math_ops.bucketize(pos_diff, cell_borders)
+import tensorflow as tf
 
 
-social_tensor = [[] for _ in range(n_grid_cells ** 2)]
-for xy_index, h in zip(neighbor_xy_indices, neighbor_hidden_states):
-    cell_index = xy_index[1] * n_grid_cells + xy_index[0]
-    social_tensor[cell_index].append(h)
+def compute_social_tensor(positions, hidden_states, cell_side: float,
+                          n_grid_cells: int):
+    """Computes social tensor.
 
-social_tensor = [tf.reduce_sum(s, axis=0) if len(s) != 0
-                 else tf.zeros(states_dim) for s in social_tensor]
-social_tensor = tf.reshape(tf.stack(social_tensor, axis=0),
-                           (-1, n_grid_cells, n_grid_cells))
-
-
-def compute_social_tensor(cell_side, n_grid_cells):
-    """Computes social tensor of pedestrians.
-
-    :param cell_side: The cell side of the grid.
-    :param n_grid_cells: The number of cells of the grid side.
-    :return:
+    :param positions: (n_pedestrians, 2).
+        The pedestrian positions.
+    :param hidden_states: (n_pedestrians, n_states).
+        The hidden states of LSTM.
+    :param cell_side: side of one cell.
+    :param n_grid_cells: The number of cells tiled on the grid side. That is,
+        the tiles on the grid is `n_grid_cells ** 2` tiles.
+    :return: (n_pedestrians, n_grid_cells, n_grid_cells, n_states)
+        social tensors.
     """
-    pass
+    n_pedestrians = tf.shape(positions).numpy()[0]
+    n_states = tf.shape(hidden_states).numpy()[1]
+
+    n_half_grid_cells = n_grid_cells // 2
+
+    cell_borders = tf.linspace(-cell_side * n_half_grid_cells,
+                               cell_side * n_half_grid_cells,
+                               n_grid_cells + 1)
+
+    indices = np.arange(tf.shape(positions).numpy()[0])
+
+    social_tensors = []
+    # Compute social tensors.
+    # i-th loop corresponds to the i-th pedestrian.
+    for i in range(n_pedestrians):
+        position_i = tf.boolean_mask(positions, indices == i)
+        other_pos = tf.boolean_mask(positions, indices != i)
+        other_hidden_states = tf.boolean_mask(hidden_states, indices != i)
+
+        # First remain only neighbor pedestrians.
+
+        pos_diff = other_pos - position_i
+        # so bucketize() in tensorflow raises an error,
+        # use digitize() in numpy as workaround.
+        cell_xy_indices = np.digitize(pos_diff.numpy(),
+                                      cell_borders.numpy()) - 1
+        neighbor_mask = tf.reduce_all(
+            tf.logical_and(0 <= cell_xy_indices,
+                           cell_xy_indices < n_grid_cells),
+            axis=1)
+
+        neighbor_xy_indices = tf.boolean_mask(cell_xy_indices, neighbor_mask)
+        neighbor_hidden_states = tf.boolean_mask(other_hidden_states,
+                                                 neighbor_mask)
+
+        social_tensor_i = [[] for _ in range(n_grid_cells ** 2)]
+        for xy_index, h in zip(neighbor_xy_indices, neighbor_hidden_states):
+            cell_index = xy_index[1] * n_grid_cells + xy_index[0]
+            social_tensor_i[cell_index].append(h)
+
+        social_tensor_i = [tf.reduce_sum(s, axis=0) if len(s) != 0
+                           else tf.zeros(n_states) for s in social_tensor_i]
+        social_tensor_i = tf.reshape(tf.stack(social_tensor_i, axis=0),
+                                     (-1, n_grid_cells, n_grid_cells))
+
+        social_tensors.append(social_tensor_i)
+
+    social_tensors = tf.stack(social_tensors, axis=0)
+    return social_tensors
+
+
+if __name__ == '__main__':
+    tf.enable_eager_execution()
+    # prepare dummy data
+    positions = tf.constant([
+        [0.5, 0.5],
+        [0.125, 0.125],
+        [0.25, 0.25],
+        [0.25, 0.75],
+        [10.0, 10.0]], dtype=tf.float32)
+    hidden_states = tf.constant([
+        [0.5, 0.5],
+        [0.125, 0.125],
+        [0.25, 0.25],
+        [0.25, 0.75],
+        [0.75, 0.25]], dtype=tf.float32)
+
+    cell_side = 0.5
+    n_grid_cells = 2
+
+    social_tensors = compute_social_tensor(positions, hidden_states, cell_side,
+                                           n_grid_cells)
+    print(social_tensors)
