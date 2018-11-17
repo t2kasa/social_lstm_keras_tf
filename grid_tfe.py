@@ -13,7 +13,7 @@ def compute_social_tensor(positions, hidden_states, cell_side: float,
     :param cell_side: side of one cell.
     :param n_side_cells: The number of cells tiled on the grid side. That is,
         the tiles on the grid is `n_grid_cells ** 2` tiles.
-    :return: (n_pedestrians, n_grid_cells, n_grid_cells, n_states)
+    :return: (n_pedestrians, n_grid_cells * n_grid_cells * n_states)
         social tensors.
     """
     n_pedestrians = tf.shape(positions).numpy()[0]
@@ -57,8 +57,7 @@ def compute_social_tensor(positions, hidden_states, cell_side: float,
 
         social_tensor_i = [tf.reduce_sum(s, axis=0) if len(s) != 0
                            else tf.zeros(n_states) for s in social_tensor_i]
-        social_tensor_i = tf.reshape(tf.stack(social_tensor_i, axis=0),
-                                     (n_side_cells, n_side_cells, n_states))
+        social_tensor_i = tf.reshape(tf.stack(social_tensor_i, axis=0), (-1,))
 
         social_tensors.append(social_tensor_i)
 
