@@ -65,27 +65,3 @@ def compute_social_tensor(positions, hidden_states, cell_side: float,
 
     social_tensors = tf.stack(social_tensors, axis=0)
     return social_tensors
-
-
-if __name__ == '__main__':
-    tf.enable_eager_execution()
-    # prepare dummy data
-    positions = tf.constant([
-        [0.5, 0.5],
-        [0.125, 0.125],
-        [0.25, 0.25],
-        [0.25, 0.75],
-        [10.0, 10.0]], dtype=tf.float32)
-    hidden_states = tf.constant([
-        [0.5, 0.5],
-        [0.125, 0.125],
-        [0.25, 0.25],
-        [0.25, 0.75],
-        [0.75, 0.25]], dtype=tf.float32)
-
-    cell_side = 0.5
-    n_grid_cells = 2
-
-    social_tensors = compute_social_tensor(positions, hidden_states, cell_side,
-                                           n_grid_cells)
-    print(social_tensors)
