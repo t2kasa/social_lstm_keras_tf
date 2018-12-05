@@ -84,10 +84,7 @@ if __name__ == '__main__':
             c_t.append(c_it)
             o_t.append(o_it)
 
-        h_t = _stack_permute_axis_zero(h_t)
-        c_t = _stack_permute_axis_zero(c_t)
-        o_t = _stack_permute_axis_zero(o_t)
-
+        h_t, c_t, o_t = [_stack_permute_axis_zero(u) for u in [h_t, c_t, o_t]]
         o_obs_batch.append(o_t)
 
         prev_h_t, prev_c_t = h_t, c_t
@@ -107,8 +104,7 @@ if __name__ == '__main__':
     # (b, max_n_peds) => (b, max_n_peds, 1)
     pid_obs_t_final = tf.expand_dims(pid_obs_t_final, axis=-1)
 
-    x_pred_batch = []
-    o_pred_batch = []
+    x_pred_batch, o_pred_batch = [], []
 
     # At the first prediction frame,
     # use the latest output of the observation step
@@ -154,18 +150,13 @@ if __name__ == '__main__':
             c_t.append(c_it)
             o_t.append(o_it)
 
-        # convert lists of h_it/c_it/o_it to h_t/c_t/o_t respectively
-        h_t = _stack_permute_axis_zero(h_t)
-        c_t = _stack_permute_axis_zero(c_t)
-        o_t = _stack_permute_axis_zero(o_t)
+        h_t, c_t, o_t = [_stack_permute_axis_zero(u) for u in [h_t, c_t, o_t]]
 
         o_pred_batch.append(o_t)
         x_pred_batch.append(x_pred_t)
 
         # prepare data for next time step.
-        prev_h_t = h_t
-        prev_c_t = c_t
-        prev_o_t = o_t
+        prev_h_t, prev_c_t, prev_o_t = h_t, c_t, o_t
 
     o_pred_batch = _stack_permute_axis_zero(o_pred_batch)
     x_pred_batch = _stack_permute_axis_zero(x_pred_batch)
