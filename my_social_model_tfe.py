@@ -117,12 +117,9 @@ if __name__ == '__main__':
     prev_o_t = o_obs_batch[:, -1, :, :]
 
     for t in range(args.pred_len):
-
-        # TODO: implement normal2d_sample() for eager mode
-        pred_pos_t = normal2d_sample(prev_o_t)
         # assume all the pedestrians in the final observation frame are
         # exist in the prediction frames.
-
+        pred_pos_t = normal2d_sample(prev_o_t)
         x_pred_t = tf.concat([pid_obs_t_final, pred_pos_t], axis=2)
 
         # grid_t = tf_grid_mask(x_pred_t,
