@@ -25,13 +25,8 @@ if __name__ == '__main__':
     x_input = np.random.randn(batch_size, args.obs_len, args.max_n_peds,
                               args.pxy_dim)
     x_input = tf.convert_to_tensor(x_input, dtype=tf.float32)
-    grid_input = np.random.randn(batch_size, args.obs_len, args.max_n_peds,
-                                 args.max_n_peds, args.n_side_cells_squared)
-    grid_input = tf.convert_to_tensor(grid_input, dtype=tf.float32)
-
     # supports only if batch size equals to 1.
     assert tf.shape(x_input).numpy()[0] == 1
-    assert tf.shape(grid_input).numpy()[0] == 1
 
     # define layers
     lstm_layer = tf.keras.layers.LSTM(
@@ -50,7 +45,6 @@ if __name__ == '__main__':
     o_obs_batch = []
     for t in range(args.obs_len):
         x_t = x_input[:, t, :, :]
-        grid_t = grid_input[:, t, ...]
         h_t = []
         c_t = []
         o_t = []
