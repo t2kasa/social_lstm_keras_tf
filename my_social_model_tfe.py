@@ -29,8 +29,7 @@ if __name__ == '__main__':
     assert tf.shape(x_input).numpy()[0] == 1
 
     # define layers
-    lstm_layer = tf.keras.layers.LSTM(
-        args.n_states, return_state=True)
+    lstm_layer = tf.keras.layers.LSTM(args.n_states, return_state=True)
     W_e_relu = tf.keras.layers.Dense(args.emb_dim, activation="relu")
     W_a_relu = tf.keras.layers.Dense(args.emb_dim, activation="relu")
     W_p = tf.keras.layers.Dense(args.out_dim)
