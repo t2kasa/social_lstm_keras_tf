@@ -14,6 +14,41 @@ def _stack_permute_axis_zero(xs):
     return xs
 
 
+def perform_step_t(x_t, prev_h_t, prev_c_t,
+                   W_e_relu, W_a_relu, W_p, lstm_layer,
+                   cell_side, n_side_cells):
+    h_t, c_t, o_t = [], [], []
+
+    # compute social tensor
+    positions = x_t[0, :, 1:]
+    hidden_states = prev_h_t[0]
+    social_tensors_t = compute_social_tensor(positions, hidden_states,
+                                             cell_side, n_side_cells)
+    social_tensors_t = tf.expand_dims(social_tensors_t, axis=0)
+
+    pos_t = x_t[..., 1:]
+    e_t = W_e_relu(pos_t)
+    a_t = W_a_relu(social_tensors_t)
+    emb_t = tf.concat([e_t, a_t], axis=-1)
+    prev_states_t = [[prev_h_t[:, i], prev_c_t[:, i]] for i in
+                     range(args.max_n_peds)]
+
+    for i in range(args.max_n_peds):
+        # build concatenated embedding states as LSTM input
+        emb_it = emb_t[:, i, :]
+        emb_it = tf.reshape(emb_it, (batch_size, 1, 2 * args.emb_dim))
+
+        lstm_output, h_it, c_it = lstm_layer(emb_it, prev_states_t[i])
+        o_it = W_p(lstm_output)
+
+        h_t.append(h_it)
+        c_t.append(c_it)
+        o_t.append(o_it)
+
+    h_t, c_t, o_t = [_stack_permute_axis_zero(u) for u in [h_t, c_t, o_t]]
+    return h_t, c_t, o_t
+
+
 if __name__ == '__main__':
     tf.enable_eager_execution()
     args = Namespace(obs_len=3, pred_len=2, max_n_peds=52, pxy_dim=3,
@@ -21,12 +56,11 @@ if __name__ == '__main__':
                      out_dim=5)
     args.n_side_cells_squared = args.n_side_cells ** 2
 
+    # my implementation works only when the batch size equals to 1.
     batch_size = 1
     x_input = np.random.randn(batch_size, args.obs_len, args.max_n_peds,
                               args.pxy_dim)
     x_input = tf.convert_to_tensor(x_input, dtype=tf.float32)
-    # supports only if batch size equals to 1.
-    assert tf.shape(x_input).numpy()[0] == 1
 
     # define layers
     lstm_layer = tf.keras.layers.LSTM(args.n_states, return_state=True)
@@ -35,7 +69,7 @@ if __name__ == '__main__':
     W_p = tf.keras.layers.Dense(args.out_dim)
 
     # --------------------------------------------------------------------------
-    # _build_model()
+    # observation step
     # --------------------------------------------------------------------------
 
     prev_h_t = tf.zeros((1, args.max_n_peds, args.n_states))
@@ -44,42 +78,10 @@ if __name__ == '__main__':
     o_obs_batch = []
     for t in range(args.obs_len):
         x_t = x_input[:, t, :, :]
-        h_t = []
-        c_t = []
-        o_t = []
-
-        # social tensor
-        positions = x_t[0, :, 1:]
-        hidden_states = prev_h_t[0]
-        social_tensors_t = compute_social_tensor(
-            positions, hidden_states, args.cell_side, args.n_side_cells)
-        social_tensors_t = tf.expand_dims(social_tensors_t, axis=0)
-
-        pos_t = x_t[..., 1:]
-        e_t = W_e_relu(pos_t)
-        a_t = W_a_relu(social_tensors_t)
-        emb_t = tf.concat([e_t, a_t], axis=-1)
-        prev_states_t = [[prev_h_t[:, i], prev_c_t[:, i]] for i in
-                         range(args.max_n_peds)]
-
-        for ped_index in range(args.max_n_peds):
-            # build concatenated embedding states as LSTM input
-            emb_it = emb_t[:, ped_index, :]
-            emb_it = tf.reshape(emb_it, (batch_size, 1, 2 * args.emb_dim))
-
-            lstm_output, h_it, c_it = lstm_layer(
-                emb_it, initial_state=prev_states_t[ped_index])
-
-            # compute o_it, which shape is (b, 5)
-            o_it = W_p(lstm_output)
-
-            h_t.append(h_it)
-            c_t.append(c_it)
-            o_t.append(o_it)
-
-        h_t, c_t, o_t = [_stack_permute_axis_zero(u) for u in [h_t, c_t, o_t]]
+        h_t, c_t, o_t = perform_step_t(x_t, prev_h_t, prev_c_t, W_e_relu,
+                                       W_a_relu, W_p, lstm_layer,
+                                       args.cell_side, args.n_side_cells)
         o_obs_batch.append(o_t)
-
         prev_h_t, prev_c_t = h_t, c_t
 
     # (b, obs_len, max_n_peds, out_dim)
@@ -110,45 +112,12 @@ if __name__ == '__main__':
         pred_pos_t = normal2d_sample(prev_o_t)
         x_pred_t = tf.concat([pid_obs_t_final, pred_pos_t], axis=2)
 
-        h_t, c_t, o_t = [], [], []
-
-        # (n_samples, max_n_peds, (n_side_cells ** 2) * n_states)
-        # social tensor
-        positions = x_pred_t[0, :, 1:]
-        hidden_states = prev_h_t[0]
-        social_tensors_t = compute_social_tensor(
-            positions, hidden_states, args.cell_side, args.n_side_cells)
-        social_tensors_t = tf.expand_dims(social_tensors_t, axis=0)
-
-        e_t = W_e_relu(pred_pos_t)
-        a_t = W_a_relu(social_tensors_t)
-        emb_t = tf.concat([e_t, a_t], axis=-1)
-        prev_states_t = [[prev_h_t[:, i], prev_c_t[:, i]] for i in
-                         range(args.max_n_peds)]
-
-        for i in range(args.max_n_peds):
-            # build concatenated embedding states as LSTM input
-            emb_it = emb_t[:, i, :]
-            emb_it = tf.reshape(emb_it, (batch_size, 1, 2 * args.emb_dim))
-
-            # initial_state = h_i_tになっている
-            # h_i_tを次のx_t_pに対してLSTMを適用するときのinitial_stateに使えば良い
-            lstm_output, h_it, c_it = lstm_layer(
-                emb_it, initial_state=prev_states_t[i])
-
-            # compute o_it, which shape is (b, 5)
-            o_it = W_p(lstm_output)
-
-            h_t.append(h_it)
-            c_t.append(c_it)
-            o_t.append(o_it)
-
-        h_t, c_t, o_t = [_stack_permute_axis_zero(u) for u in [h_t, c_t, o_t]]
-
-        o_pred_batch.append(o_t)
+        h_t, c_t, o_t = perform_step_t(x_pred_t, prev_h_t, prev_c_t, W_e_relu,
+                                       W_a_relu, W_p, lstm_layer,
+                                       args.cell_side, args.n_side_cells)
         x_pred_batch.append(x_pred_t)
+        o_pred_batch.append(o_t)
 
-        # prepare data for next time step.
         prev_h_t, prev_c_t, prev_o_t = h_t, c_t, o_t
 
     o_pred_batch = _stack_permute_axis_zero(o_pred_batch)
