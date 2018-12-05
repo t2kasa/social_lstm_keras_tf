@@ -125,6 +125,7 @@ if __name__ == '__main__':
     o_concat_batch = tf.concat([o_obs_batch, o_pred_batch], axis=1)
 
     lr = 0.003
+    optimizer = tf.train.RMSPropOptimizer(learning_rate=lr)
 
     # # 本当に学習に必要なモデルはこっちのはず
     # self.train_model = Model([self.x_input, self.grid_input, self.zeros_input],
