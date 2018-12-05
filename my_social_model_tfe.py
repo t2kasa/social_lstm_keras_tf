@@ -125,12 +125,14 @@ if __name__ == '__main__':
 
         # (n_samples, max_n_peds, (n_side_cells ** 2) * n_states)
         # social tensor
-        H_t = np.random.randn(batch_size, args.max_n_peds,
-                              (args.n_side_cells ** 2) * args.n_states)
-        H_t = tf.convert_to_tensor(H_t, dtype=tf.float32)
+        positions = x_pred_t[0, :, 1:]
+        hidden_states = prev_h_t[0]
+        social_tensors_t = compute_social_tensor(
+            positions, hidden_states, args.cell_side, args.n_side_cells)
+        social_tensors_t = tf.expand_dims(social_tensors_t, axis=0)
 
         e_t = W_e_relu(pred_pos_t)
-        a_t = W_a_relu(H_t)
+        a_t = W_a_relu(social_tensors_t)
         emb_t = tf.concat([e_t, a_t], axis=-1)
         prev_states_t = [[prev_h_t[:, i], prev_c_t[:, i]] for i in
                          range(args.max_n_peds)]
