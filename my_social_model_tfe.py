@@ -66,7 +66,6 @@ if __name__ == '__main__':
         e_t = W_e_relu(pos_t)
         a_t = W_a_relu(social_tensors_t)
         emb_t = tf.concat([e_t, a_t], axis=-1)
-
         prev_states_t = [[prev_h_t[:, i], prev_c_t[:, i]] for i in
                          range(args.max_n_peds)]
 
@@ -78,11 +77,11 @@ if __name__ == '__main__':
             lstm_output, h_it, c_it = lstm_layer(
                 emb_it, initial_state=prev_states_t[ped_index])
 
-            h_t.append(h_it)
-            c_t.append(c_it)
-
             # compute o_it, which shape is (b, 5)
             o_it = W_p(lstm_output)
+
+            h_t.append(h_it)
+            c_t.append(c_it)
             o_t.append(o_it)
 
         h_t = _stack_permute_axis_zero(h_t)
@@ -122,10 +121,6 @@ if __name__ == '__main__':
         pred_pos_t = normal2d_sample(prev_o_t)
         x_pred_t = tf.concat([pid_obs_t_final, pred_pos_t], axis=2)
 
-        # grid_t = tf_grid_mask(x_pred_t,
-        #                       get_image_size(config.test_dataset_kind),
-        #                       config.n_neighbor_pixels, config.n_side_cells)
-
         h_t, c_t, o_t = [], [], []
 
         # (n_samples, max_n_peds, (n_side_cells ** 2) * n_states)
@@ -134,35 +129,27 @@ if __name__ == '__main__':
                               (args.n_side_cells ** 2) * args.n_states)
         H_t = tf.convert_to_tensor(H_t, dtype=tf.float32)
 
+        e_t = W_e_relu(pred_pos_t)
+        a_t = W_a_relu(H_t)
+        emb_t = tf.concat([e_t, a_t], axis=-1)
+        prev_states_t = [[prev_h_t[:, i], prev_c_t[:, i]] for i in
+                         range(args.max_n_peds)]
+
         for i in range(args.max_n_peds):
-            print("(t, li):", t, i)
-
-            prev_o_it = prev_o_t[:, i, :]
-            H_it = H_t[:, i, ...]
-
-            # pred_pos_it: (batch_size, 2)
-            pred_pos_it = normal2d_sample(prev_o_it)
-
-            # e_it: (batch_size, emb_dim)
-            # a_it: (batch_size, emb_dim)
-            e_it = W_e_relu(pred_pos_it)
-            a_it = W_a_relu(H_it)
-
-            # build concatenated embedding states for LSTM input
-            # emb_it: (batch_size, 1, 2 * emb_dim)
-            emb_it = tf.concat([e_it, a_it], axis=1)
+            # build concatenated embedding states as LSTM input
+            emb_it = emb_t[:, i, :]
             emb_it = tf.reshape(emb_it, (batch_size, 1, 2 * args.emb_dim))
 
             # initial_state = h_i_tになっている
             # h_i_tを次のx_t_pに対してLSTMを適用するときのinitial_stateに使えば良い
-            prev_states_it = [prev_h_t[:, i], prev_c_t[:, i]]
-            lstm_output, h_it, c_it = lstm_layer(emb_it, prev_states_it)
+            lstm_output, h_it, c_it = lstm_layer(
+                emb_it, initial_state=prev_states_t[i])
+
+            # compute o_it, which shape is (b, 5)
+            o_it = W_p(lstm_output)
 
             h_t.append(h_it)
             c_t.append(c_it)
-
-            # compute output_it, which shape is (batch_size, 5)
-            o_it = W_p(lstm_output)
             o_t.append(o_it)
 
         # convert lists of h_it/c_it/o_it to h_t/c_t/o_t respectively
@@ -173,12 +160,11 @@ if __name__ == '__main__':
         o_pred_batch.append(o_t)
         x_pred_batch.append(x_pred_t)
 
-        # current => previous
+        # prepare data for next time step.
         prev_h_t = h_t
         prev_c_t = c_t
         prev_o_t = o_t
 
-    # convert list of output_t to output_batch
     o_pred_batch = _stack_permute_axis_zero(o_pred_batch)
     x_pred_batch = _stack_permute_axis_zero(x_pred_batch)
     o_concat_batch = tf.concat([o_obs_batch, o_pred_batch], axis=1)
