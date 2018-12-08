@@ -5,7 +5,7 @@ from argparse import Namespace, ArgumentParser
 import matplotlib.pyplot as plt
 import numpy as np
 
-from data_utils import obs_pred_split
+from datasets.data_utils import obs_pred_split
 from evaluation_metrics import compute_abe, compute_fde
 from load_model_config import load_model_config
 from social_lstm.my_social_model import MySocialModel

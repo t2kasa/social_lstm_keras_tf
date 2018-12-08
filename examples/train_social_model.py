@@ -4,7 +4,7 @@ from shutil import copyfile
 
 import matplotlib.pyplot as plt
 
-from data_utils import obs_pred_split
+from datasets.data_utils import obs_pred_split
 from general_utils import dump_json_file
 from general_utils import now_to_str
 from load_model_config import ModelConfig
