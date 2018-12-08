@@ -49,18 +49,18 @@ class EthDatasetPreprosessor:
         return self._data_dir
 
     @staticmethod
-    def _world_to_image_xy(world_xy, H):
-        """Convert world (x, y) position to image (x, y) position.
+    def _world_to_image_xy(world_xy, homography):
+        """Converts world (x, y) position to image (x, y) position.
 
         This function use inverse mapping of homography transform.
 
         :param world_xy: world (x, y) positions
-        :param H: homography matrix
+        :param homography: homography matrix
         :return: image (x, y) positions
         """
         world_xy = np.array(world_xy)
         world_xy1 = np.concatenate([world_xy, np.ones((len(world_xy), 1))],
                                    axis=1)
-        image_xy1 = np.linalg.inv(H).dot(world_xy1.T).T
+        image_xy1 = np.linalg.inv(homography).dot(world_xy1.T).T
         image_xy = image_xy1[:, :2] / np.expand_dims(image_xy1[:, 2], axis=1)
         return image_xy
