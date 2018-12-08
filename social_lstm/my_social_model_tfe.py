@@ -3,10 +3,11 @@ import tensorflow as tf
 from social_lstm.grid_tfe import compute_social_tensor
 from social_lstm.tfe_normal_sampler import normal2d_sample
 
+_out_dim = 5
+
 
 class SocialLSTM(tf.keras.Model):
-    def __init__(self, pred_len, cell_side, n_side_cells, lstm_dim, emb_dim,
-                 out_dim=5):
+    def __init__(self, pred_len, cell_side, n_side_cells, lstm_dim, emb_dim):
         super(SocialLSTM, self).__init__()
         self.pred_len = pred_len
         self.cell_side = cell_side
@@ -17,65 +18,63 @@ class SocialLSTM(tf.keras.Model):
         self.lstm_layer = tf.keras.layers.LSTM(lstm_dim, return_state=True)
         self.W_e_relu = tf.keras.layers.Dense(emb_dim, activation="relu")
         self.W_a_relu = tf.keras.layers.Dense(emb_dim, activation="relu")
-        self.W_p = tf.keras.layers.Dense(out_dim)
+        self.W_p = tf.keras.layers.Dense(_out_dim)
 
     def call(self, inputs, training=None, mask=None):
-        for x in inputs:
-            self.perform_sample(x)
+        # list of (pred_len, n_pids, out_dim)
+        # note that n_pids may be different among inputs.
+        o_pred_batch = [self._perform_sample(x) for x in inputs]
+        return o_pred_batch
 
-    def perform_sample(self, x):
+    def _perform_sample(self, x):
+        """
+
+        :param x: (obs_len, n_pids, xy_dim = 2)
+        :return: output tensor. the shape is (pred_len, n_pids, out_dim)
+        """
         obs_len, n_pids, _ = tf.shape(x).numpy()
+
         # ----------------------------------------------------------------------
         # observation step
         # ----------------------------------------------------------------------
         prev_h_t = tf.zeros((1, n_pids, self.lstm_dim))
         prev_c_t = tf.zeros((1, n_pids, self.lstm_dim))
 
-        o_obs_batch = []
+        o_obs = []
         for t in range(obs_len):
             x_t = x[t, :, :]
-            h_t, c_t, o_t = self.perform_step_t(x_t, prev_h_t, prev_c_t)
-            o_obs_batch.append(o_t)
-            prev_h_t, prev_c_t = h_t, c_t
+            h_t, c_t, o_t = self._perform_step_t(x_t, prev_h_t, prev_c_t)
 
-        # (b, obs_len, max_n_peds, out_dim)
-        o_obs_batch = _stack_permute_axis_zero(o_obs_batch)
+            o_obs.append(o_t)
+            prev_h_t, prev_c_t = h_t, c_t
+        # (batch_size = 1, obs_len, n_pids, out_dim = 5)
+        o_obs = _stack_permute_axis_zero(o_obs)
 
         # ----------------------------------------------------------------------
         # prediction step
         # ----------------------------------------------------------------------
         # この時点でprev_h_t, prev_c_tにはobs_lenの最終的な状態が残っている
 
-        # (obs_len, n_pids, 2) => (n_pids, 2)
-        x_obs_t_final = x[-1, :, :]
-        # (b, n_pids, 2) => (b, n_pids)
-        pid_obs_t_final = x_obs_t_final[:, :, 0]
-        # (b, max_n_peds) => (b, max_n_peds, 1)
-        pid_obs_t_final = tf.expand_dims(pid_obs_t_final, axis=-1)
-
-        x_pred_batch, o_pred_batch = [], []
-
         # At the first prediction frame,
         # use the latest output of the observation step
-        # (b, obs_len, max_n_peds, out_dim) => (b, max_n_peds, out_dim)
-        prev_o_t = o_obs_batch[:, -1, :, :]
+        # (batch_size = 1, obs_len, n_pids, out_dim = 5)
+        # => (n_pids, out_dim = 5)
+        prev_o_t = o_obs[0, -1, :, :]
 
+        o_pred = []
         for t in range(self.pred_len):
-            # assume all the pedestrians in the final observation frame are
-            # exist in the prediction frames.
-            pred_pos_t = normal2d_sample(prev_o_t)
-            x_pred_t = tf.concat([pid_obs_t_final, pred_pos_t], axis=2)
+            # (n_pids, out_dim = 5) => (n_pids, 2)
+            x_pred_t = normal2d_sample(prev_o_t)
+            h_t, c_t, o_t = self._perform_step_t(x_pred_t, prev_h_t, prev_c_t)
 
-            h_t, c_t, o_t = self.perform_step_t(x_pred_t, prev_h_t, prev_c_t)
-            x_pred_batch.append(x_pred_t)
-            o_pred_batch.append(o_t)
-
+            o_pred.append(o_t)
             prev_h_t, prev_c_t, prev_o_t = h_t, c_t, o_t
 
-        o_pred_batch = _stack_permute_axis_zero(o_pred_batch)
-        return o_pred_batch
+        # (1, pred_len, n_pids, out_dim) => (pred_len, n_pids, out_dim)
+        o_pred = _stack_permute_axis_zero(o_pred)
+        return o_pred
 
-    def perform_step_t(self, x_t, prev_h_t, prev_c_t):
+    def _perform_step_t(self, x_t, prev_h_t, prev_c_t):
         n_pids, _ = tf.shape(x_t).numpy()
         h_t, c_t, o_t = [], [], []
 

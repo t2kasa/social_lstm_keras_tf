@@ -49,13 +49,18 @@ def main():
     tf.enable_eager_execution()
     args = load_args()
 
-    train_datasets = [_load_single_dataset(d, args) for d in
-                      args.train_data_dirs]
-    test_datasets = [_load_single_dataset(d, args) for d in args.test_data_dirs]
+    # train_datasets = [_load_single_dataset(d, args) for d in
+    #                   args.train_data_dirs]
+    # test_datasets = [_load_single_dataset(d, args) for d in args.test_data_dirs]
 
-    xs = tf.random.normal([args.batch_size, args.obs_len, 52, pxy_dim])
+    # xs, ys = train_datasets[0]
+    # test_ds = test_datasets[0]
+    # print(tf.shape(xs[0]))
+    # exit(0)
+
+    xs = [tf.random.normal([7, 4, 2])]
     social_lstm = SocialLSTM(args.pred_len, args.cell_side, args.n_side_cells,
-                             args.lstm_dim, args.emb_dim, out_dim)
+                             args.lstm_dim, args.emb_dim)
     social_lstm.call(xs)
 
 
