@@ -26,6 +26,10 @@ class SocialLSTM(tf.keras.Model):
         prev_h_t = tf.zeros((1, args.max_n_peds, args.n_states))
         prev_c_t = tf.zeros((1, args.max_n_peds, args.n_states))
 
+        # --------------------------------------------------------------------------
+        # observation step
+        # --------------------------------------------------------------------------
+
         o_obs_batch = []
         for t in range(args.obs_len):
             x_t = x_input[:, t, :, :]
@@ -150,7 +154,6 @@ if __name__ == '__main__':
     args = Namespace(obs_len=3, pred_len=2, max_n_peds=52, pxy_dim=3,
                      cell_side=0.5, n_side_cells=4, n_states=32, emb_dim=16,
                      out_dim=5)
-    args.n_side_cells_squared = args.n_side_cells ** 2
 
     # my implementation works only when the batch size equals to 1.
     batch_size = 1
@@ -158,75 +161,11 @@ if __name__ == '__main__':
                               args.pxy_dim)
     x_input = tf.convert_to_tensor(x_input, dtype=tf.float32)
 
-
     social_lstm = SocialLSTM(args.cell_side,args.n_side_cells, args.n_states,
                              args.emb_dim, args.out_dim)
     social_lstm.call(x_input)
     print('passed!')
     exit(0)
-
-
-    # define layers
-    lstm_layer = tf.keras.layers.LSTM(args.n_states, return_state=True)
-    W_e_relu = tf.keras.layers.Dense(args.emb_dim, activation="relu")
-    W_a_relu = tf.keras.layers.Dense(args.emb_dim, activation="relu")
-    W_p = tf.keras.layers.Dense(args.out_dim)
-
-    # --------------------------------------------------------------------------
-    # observation step
-    # --------------------------------------------------------------------------
-
-    prev_h_t = tf.zeros((1, args.max_n_peds, args.n_states))
-    prev_c_t = tf.zeros((1, args.max_n_peds, args.n_states))
-
-    o_obs_batch = []
-    for t in range(args.obs_len):
-        x_t = x_input[:, t, :, :]
-        h_t, c_t, o_t = perform_step_t(x_t, prev_h_t, prev_c_t, W_e_relu,
-                                       W_a_relu, W_p, lstm_layer,
-                                       args.cell_side, args.n_side_cells)
-        o_obs_batch.append(o_t)
-        prev_h_t, prev_c_t = h_t, c_t
-
-    # (b, obs_len, max_n_peds, out_dim)
-    o_obs_batch = _stack_permute_axis_zero(o_obs_batch)
-
-    # --------------------------------------------------------------------------
-    # prediction step
-    # --------------------------------------------------------------------------
-    # この時点でprev_h_t, prev_c_tにはobs_lenの最終的な状態が残っている
-
-    # (b, obs_len, max_n_peds, pxy_dim) => (b, max_n_peds, pxy_dim)
-    x_obs_t_final = x_input[:, -1, :, :]
-    # (b, max_n_peds, pxy_dim) => (b, max_n_peds)
-    pid_obs_t_final = x_obs_t_final[:, :, 0]
-    # (b, max_n_peds) => (b, max_n_peds, 1)
-    pid_obs_t_final = tf.expand_dims(pid_obs_t_final, axis=-1)
-
-    x_pred_batch, o_pred_batch = [], []
-
-    # At the first prediction frame,
-    # use the latest output of the observation step
-    # (b, obs_len, max_n_peds, out_dim) => (b, max_n_peds, out_dim)
-    prev_o_t = o_obs_batch[:, -1, :, :]
-
-    for t in range(args.pred_len):
-        # assume all the pedestrians in the final observation frame are
-        # exist in the prediction frames.
-        pred_pos_t = normal2d_sample(prev_o_t)
-        x_pred_t = tf.concat([pid_obs_t_final, pred_pos_t], axis=2)
-
-        h_t, c_t, o_t = perform_step_t(x_pred_t, prev_h_t, prev_c_t, W_e_relu,
-                                       W_a_relu, W_p, lstm_layer,
-                                       args.cell_side, args.n_side_cells)
-        x_pred_batch.append(x_pred_t)
-        o_pred_batch.append(o_t)
-
-        prev_h_t, prev_c_t, prev_o_t = h_t, c_t, o_t
-
-    o_pred_batch = _stack_permute_axis_zero(o_pred_batch)
-    x_pred_batch = _stack_permute_axis_zero(x_pred_batch)
-    o_concat_batch = tf.concat([o_obs_batch, o_pred_batch], axis=1)
 
     lr = 0.003
     optimizer = tf.train.RMSPropOptimizer(learning_rate=lr)
