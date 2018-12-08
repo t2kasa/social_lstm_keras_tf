@@ -9,8 +9,8 @@ from commons.general_utils import get_image_size
 class EthPreprosessor:
     """Preprocessor for ETH dataset."""
 
-    def __init__(self, data_dir, dataset_kind):
-        self.image_size = get_image_size(dataset_kind)
+    def __init__(self, data_dir, image_size):
+        self.image_size = image_size
         # read homography matrix
         self.homography = np.genfromtxt(os.path.join(data_dir, "H.txt"))
         # read trajectory data

@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+from pathlib import Path
 
 import tensorflow as tf
 
@@ -30,9 +31,28 @@ def load_args():
     return args
 
 
+def _load_single_dataset(data_dir, args):
+    from datasets.build_dataset import build_dataset
+
+    dataset_name = Path(data_dir).stem
+    if dataset_name == 'hotel':
+        image_size = (750, 576)
+    else:  # eth
+        image_size = (640, 480)
+
+    obs_true_seqs, pred_true_seqs = build_dataset(data_dir, image_size,
+                                                  args.obs_len, args.pred_len)
+    return obs_true_seqs, pred_true_seqs
+
+
 def main():
     tf.enable_eager_execution()
     args = load_args()
+
+    train_datasets = [_load_single_dataset(d, args) for d in
+                      args.train_data_dirs]
+    test_datasets = [_load_single_dataset(d, args) for d in args.test_data_dirs]
+
     xs = tf.random.normal([args.batch_size, args.obs_len, 52, pxy_dim])
     social_lstm = SocialLSTM(args.pred_len, args.cell_side, args.n_side_cells,
                              args.lstm_dim, args.emb_dim, out_dim)
