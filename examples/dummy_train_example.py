@@ -20,16 +20,3 @@ if __name__ == '__main__':
     social_lstm = SocialLSTM(args.pred_len, args.cell_side, args.n_side_cells,
                              args.lstm_dim, args.emb_dim, args.out_dim)
     social_lstm.call(x_input)
-    print('passed!')
-    exit(0)
-
-    lr = 0.003
-    optimizer = tf.train.RMSPropOptimizer(learning_rate=lr)
-
-    # # 本当に学習に必要なモデルはこっちのはず
-    # self.train_model = Model([self.x_input, self.grid_input, self.zeros_input],
-    #                          o_pred_batch)
-    # optimizer = RMSprop(lr=lr)
-    # self.train_model.compile(optimizer, self._compute_loss)
-    # self.sample_model = Model([self.x_input, self.grid_input, self.zeros_input],
-    #                           x_pred_batch)
