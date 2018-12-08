@@ -26,9 +26,9 @@ class SocialLSTM(tf.keras.Model):
         prev_h_t = tf.zeros((1, args.max_n_peds, args.n_states))
         prev_c_t = tf.zeros((1, args.max_n_peds, args.n_states))
 
-        # --------------------------------------------------------------------------
+        # ----------------------------------------------------------------------
         # observation step
-        # --------------------------------------------------------------------------
+        # ----------------------------------------------------------------------
 
         o_obs_batch = []
         for t in range(args.obs_len):
@@ -40,9 +40,9 @@ class SocialLSTM(tf.keras.Model):
         # (b, obs_len, max_n_peds, out_dim)
         o_obs_batch = _stack_permute_axis_zero(o_obs_batch)
 
-        # --------------------------------------------------------------------------
+        # ----------------------------------------------------------------------
         # prediction step
-        # --------------------------------------------------------------------------
+        # ----------------------------------------------------------------------
         # この時点でprev_h_t, prev_c_tにはobs_lenの最終的な状態が残っている
 
         # (b, obs_len, max_n_peds, pxy_dim) => (b, max_n_peds, pxy_dim)
@@ -114,41 +114,6 @@ def _stack_permute_axis_zero(xs):
     return xs
 
 
-def perform_step_t(x_t, prev_h_t, prev_c_t,
-                   W_e_relu, W_a_relu, W_p, lstm_layer,
-                   cell_side, n_side_cells):
-    h_t, c_t, o_t = [], [], []
-
-    # compute social tensor
-    positions = x_t[0, :, 1:]
-    hidden_states = prev_h_t[0]
-    social_tensors_t = compute_social_tensor(positions, hidden_states,
-                                             cell_side, n_side_cells)
-    social_tensors_t = tf.expand_dims(social_tensors_t, axis=0)
-
-    pos_t = x_t[..., 1:]
-    e_t = W_e_relu(pos_t)
-    a_t = W_a_relu(social_tensors_t)
-    emb_t = tf.concat([e_t, a_t], axis=-1)
-    prev_states_t = [[prev_h_t[:, i], prev_c_t[:, i]] for i in
-                     range(args.max_n_peds)]
-
-    for i in range(args.max_n_peds):
-        # build concatenated embedding states as LSTM input
-        emb_it = emb_t[:, i, :]
-        emb_it = tf.reshape(emb_it, (batch_size, 1, 2 * args.emb_dim))
-
-        lstm_output, h_it, c_it = lstm_layer(emb_it, prev_states_t[i])
-        o_it = W_p(lstm_output)
-
-        h_t.append(h_it)
-        c_t.append(c_it)
-        o_t.append(o_it)
-
-    h_t, c_t, o_t = [_stack_permute_axis_zero(u) for u in [h_t, c_t, o_t]]
-    return h_t, c_t, o_t
-
-
 if __name__ == '__main__':
     tf.enable_eager_execution()
     args = Namespace(obs_len=3, pred_len=2, max_n_peds=52, pxy_dim=3,
@@ -161,7 +126,7 @@ if __name__ == '__main__':
                               args.pxy_dim)
     x_input = tf.convert_to_tensor(x_input, dtype=tf.float32)
 
-    social_lstm = SocialLSTM(args.cell_side,args.n_side_cells, args.n_states,
+    social_lstm = SocialLSTM(args.cell_side, args.n_side_cells, args.n_states,
                              args.emb_dim, args.out_dim)
     social_lstm.call(x_input)
     print('passed!')
