@@ -10,15 +10,14 @@ class EthDatasetPreprosessor:
     """Preprocessor for ETH dataset."""
 
     def __init__(self, data_dir, dataset_kind):
-        self._data_dir = data_dir
         self.image_size = get_image_size(dataset_kind)
 
         # read homography matrix
-        homography_file = os.path.join(self.data_dir, "H.txt")
+        homography_file = os.path.join(data_dir, "H.txt")
         self.homography = np.genfromtxt(homography_file)
 
         # read trajectory data
-        obsmat_file = os.path.join(self.data_dir, "obsmat.txt")
+        obsmat_file = os.path.join(data_dir, "obsmat.txt")
         obs_columns = ["frame", "id", "px", "pz", "py", "vx", "vz", "vy"]
         obs_df = pd.DataFrame(np.genfromtxt(obsmat_file), columns=obs_columns)
         # remain only (frame index, pedestrian id, position x, position y)
@@ -27,26 +26,18 @@ class EthDatasetPreprosessor:
     def preprocess_frame_data(self):
         # position preprocessing
         xy = np.array(self.raw_df[["px", "py"]])
-
         # world xy to image xy: inverse mapping of homography
         xy = self._world_to_image_xy(xy, self.homography)
-
         # normalize
         xy = xy / self.image_size
 
-        # construct preprocessed df
-        pos_df_preprocessed = pd.DataFrame({
+        pos_df = pd.DataFrame({
             "frame": self.raw_df["frame"],
             "id": self.raw_df["id"],
             "x": xy[:, 0],
             "y": xy[:, 1]
         })
-
-        return pos_df_preprocessed
-
-    @property
-    def data_dir(self):
-        return self._data_dir
+        return pos_df
 
     @staticmethod
     def _world_to_image_xy(world_xy, homography):
