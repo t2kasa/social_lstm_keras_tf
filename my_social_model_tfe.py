@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from grid_tfe import compute_social_tensor
+from social_lstm.grid_tfe import compute_social_tensor
 from tfe_normal_sampler import normal2d_sample
 
 
