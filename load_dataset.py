@@ -1,10 +1,8 @@
-from functools import reduce
-
 import numpy as np
 
+from datasets.single_dataset import SingleDataset
 from general_utils import get_data_dir
 from general_utils import get_image_size
-from grid import grid_mask
 from load_model_config import ModelConfig
 from preprocessors.preprocessors_utils import create_dataset_preprocessor
 
@@ -27,73 +25,6 @@ def load_dataset(data_dir, dataset_kind, seq_len, max_n_peds, n_neighbor_pixels,
                                   dataset_kind)
     dataset = loader.load()
     return dataset
-
-
-class SingleDataset:
-    def __init__(self, frame_data, seq_len, max_n_peds, n_neighbor_pixels,
-                 grid_side, image_size):
-        self.seq_len = seq_len
-        self.max_n_peds = max_n_peds
-        self.n_neighbor_pixels = n_neighbor_pixels
-        self.grid_side = grid_side
-        self.image_size = image_size
-
-        self.x_data, self.y_data, self.grid_data = self._build_data(frame_data)
-
-    def _build_data(self, frame_data):
-        x_data = []
-        y_data = []
-
-        for i in range(len(frame_data) - self.seq_len):
-            cf_data = frame_data[i:i + self.seq_len, ...]
-            nf_data = frame_data[i + 1:i + self.seq_len + 1, ...]
-
-            pid_col = 0
-            # collect pedestrian ids where the pedestrians exist in the
-            # all frames of the current and next sequence
-            cf_ped_ids = reduce(
-                set.intersection,
-                [set(cf_pids) for cf_pids in cf_data[..., pid_col]])
-            nf_ped_ids = reduce(
-                set.intersection,
-                [set(nf_pids) for nf_pids in nf_data[..., pid_col]])
-
-            ped_ids = list(cf_ped_ids & nf_ped_ids - {0})
-            # if there are no pedestrians
-            if not ped_ids:
-                continue
-
-            x = np.zeros((self.seq_len, self.max_n_peds, 3))
-            y = np.zeros((self.seq_len, self.max_n_peds, 3))
-
-            # fi = frame index, cf = current frame, nf = next frame
-            for fi, (cf, nf) in enumerate(zip(cf_data, nf_data)):
-                for j, ped_id in enumerate(ped_ids):
-                    cf_ped_row = cf[:, 0] == ped_id
-                    nf_ped_row = nf[:, 0] == ped_id
-
-                    if np.any(cf_ped_row):
-                        x[fi, j, :] = cf[cf[:, 0] == ped_id]
-                    if np.any(nf_ped_row):
-                        y[fi, j, :] = nf[nf[:, 0] == ped_id]
-
-            x_data.append(x)
-            y_data.append(y)
-
-        # compute grid mask
-        grid_data = [grid_mask(x, self.image_size, self.n_neighbor_pixels,
-                               self.grid_side) for x in x_data]
-
-        data_tuple = (np.array(x_data, np.float32),
-                      np.array(y_data, np.float32),
-                      np.array(grid_data, np.float32))
-        return data_tuple
-
-    def get_data(self, lstm_state_dim):
-        zeros_data = np.zeros((len(self.x_data), self.seq_len,
-                               self.max_n_peds, lstm_state_dim), np.float32)
-
-        return self.x_data, self.y_data, self.grid_data, zeros_data
 
 
 class _SingleDatasetLoader:
