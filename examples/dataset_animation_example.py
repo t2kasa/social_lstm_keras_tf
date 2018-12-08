@@ -10,7 +10,7 @@ import numpy as np
 
 from matplotlib.animation import FuncAnimation
 from commons.general_utils import DatasetKind
-from preprocessors.eth_dataset_preprocessor import EthDatasetPreprosessor
+from preprocessors.eth_preprocessor import EthPreprosessor
 
 
 class TrajectoryAnimator:
@@ -36,7 +36,7 @@ class TrajectoryAnimator:
 
 def main():
     hotel_data_dir = Path(Path(__file__).parent / 'data/datasets/eth/hotel')
-    preprocessor = EthDatasetPreprosessor(hotel_data_dir, DatasetKind.hotel)
+    preprocessor = EthPreprosessor(hotel_data_dir, DatasetKind.hotel)
     df = preprocessor.preprocess_frame_data()
 
     animator = TrajectoryAnimator(df)

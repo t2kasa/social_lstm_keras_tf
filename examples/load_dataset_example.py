@@ -2,14 +2,14 @@ from pathlib import Path
 
 from datasets.single_dataset import SingleDataset
 from commons.general_utils import DatasetKind
-from preprocessors.eth_dataset_preprocessor import EthDatasetPreprosessor
+from preprocessors.eth_preprocessor import EthPreprosessor
 
 
 def main():
     data_dir = str(Path(__file__).parent / '../data/datasets/eth/hotel')
     dataset_kind = DatasetKind.hotel
 
-    preprocessor = EthDatasetPreprosessor(data_dir, dataset_kind)
+    preprocessor = EthPreprosessor(data_dir, dataset_kind)
 
     frame_data = preprocessor.preprocess_frame_data()
 

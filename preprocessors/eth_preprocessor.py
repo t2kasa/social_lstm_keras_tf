@@ -6,7 +6,7 @@ import pandas as pd
 from commons.general_utils import get_image_size
 
 
-class EthDatasetPreprosessor:
+class EthPreprosessor:
     """Preprocessor for ETH dataset."""
 
     def __init__(self, data_dir, dataset_kind):

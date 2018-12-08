@@ -6,7 +6,7 @@ import pandas as pd
 from commons.general_utils import get_image_size
 
 
-class UcyDatasetPreprocessor:
+class UcyPreprocessor:
     ped_start_line_words = "Num of control points"
     vsp_columns = ["x", "y", "frame", "gaze", "dummy1", "dummy2", "dummy3",
                    "dummy4"]
