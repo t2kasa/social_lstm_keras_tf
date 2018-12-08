@@ -20,22 +20,20 @@ class SocialLSTM(tf.keras.Model):
         self.W_p = tf.keras.layers.Dense(out_dim)
 
     def call(self, inputs, training=None, mask=None):
-        x_input = inputs
+        for x in inputs:
+            self.perform_sample(x)
 
-        batch_size, obs_len, max_n_peds, pxy_dim = tf.shape(x_input).numpy()
-
-        # TODO: if training is True, x_input needs to have ground truth for prediction step.
-
-        prev_h_t = tf.zeros((1, max_n_peds, self.lstm_dim))
-        prev_c_t = tf.zeros((1, max_n_peds, self.lstm_dim))
-
+    def perform_sample(self, x):
+        obs_len, n_pids, _ = tf.shape(x).numpy()
         # ----------------------------------------------------------------------
         # observation step
         # ----------------------------------------------------------------------
+        prev_h_t = tf.zeros((1, n_pids, self.lstm_dim))
+        prev_c_t = tf.zeros((1, n_pids, self.lstm_dim))
 
         o_obs_batch = []
         for t in range(obs_len):
-            x_t = x_input[:, t, :, :]
+            x_t = x[t, :, :]
             h_t, c_t, o_t = self.perform_step_t(x_t, prev_h_t, prev_c_t)
             o_obs_batch.append(o_t)
             prev_h_t, prev_c_t = h_t, c_t
@@ -48,9 +46,9 @@ class SocialLSTM(tf.keras.Model):
         # ----------------------------------------------------------------------
         # この時点でprev_h_t, prev_c_tにはobs_lenの最終的な状態が残っている
 
-        # (b, obs_len, max_n_peds, pxy_dim) => (b, max_n_peds, pxy_dim)
-        x_obs_t_final = x_input[:, -1, :, :]
-        # (b, max_n_peds, pxy_dim) => (b, max_n_peds)
+        # (obs_len, n_pids, 2) => (n_pids, 2)
+        x_obs_t_final = x[-1, :, :]
+        # (b, n_pids, 2) => (b, n_pids)
         pid_obs_t_final = x_obs_t_final[:, :, 0]
         # (b, max_n_peds) => (b, max_n_peds, 1)
         pid_obs_t_final = tf.expand_dims(pid_obs_t_final, axis=-1)
@@ -78,27 +76,29 @@ class SocialLSTM(tf.keras.Model):
         return o_pred_batch
 
     def perform_step_t(self, x_t, prev_h_t, prev_c_t):
-        batch_size, max_n_peds, _ = tf.shape(x_t).numpy()
+        n_pids, _ = tf.shape(x_t).numpy()
         h_t, c_t, o_t = [], [], []
 
         # compute social tensor
-        positions = x_t[0, :, 1:]
         hidden_states = prev_h_t[0]
         social_tensors_t = compute_social_tensor(
-            positions, hidden_states, self.cell_side, self.n_side_cells)
-        social_tensors_t = tf.expand_dims(social_tensors_t, axis=0)
+            x_t, hidden_states, self.cell_side, self.n_side_cells)
+        # social_tensors_t = tf.expand_dims(social_tensors_t, axis=0)
 
-        pos_t = x_t[..., 1:]
-        e_t = self.W_e_relu(pos_t)
+        # (n_pids, 2) => (n_pids, emb_dim)
+        e_t = self.W_e_relu(x_t)
+        # (n_pids, 2) => (n_pids, emb_dim)
         a_t = self.W_a_relu(social_tensors_t)
+        # [(n_pids, emb_dim), (n_pids, emb_dim)] => (n_pids, 2 * emb_dim)
         emb_t = tf.concat([e_t, a_t], axis=-1)
         prev_states_t = [[prev_h_t[:, i], prev_c_t[:, i]] for i in
-                         range(max_n_peds)]
+                         range(n_pids)]
 
-        for i in range(max_n_peds):
-            # build concatenated embedding states as LSTM input
-            emb_it = emb_t[:, i, :]
-            emb_it = tf.reshape(emb_it, (batch_size, 1, 2 * self.emb_dim))
+        for i in range(n_pids):
+            # (n_pids, 2 * emb_dim) => (2 * emb_dim,)
+            emb_it = emb_t[i, :]
+            # (2 * emb_dim,) => (batch_size = 1, time_steps = 1, 2 * emb_dim)
+            emb_it = tf.reshape(emb_it, (1, 1, 2 * self.emb_dim))
 
             lstm_output, h_it, c_it = self.lstm_layer(emb_it, prev_states_t[i])
             o_it = self.W_p(lstm_output)
