@@ -9,7 +9,7 @@ from datasets.data_utils import obs_pred_split
 from evaluation_metrics import compute_abe, compute_fde
 from load_model_config import load_model_config
 from social_lstm.my_social_model import MySocialModel
-from provide_train_test import provide_train_test
+from datasets.provide_train_test import provide_train_test
 from vizualize_trajectories import visualize_trajectories
 
 

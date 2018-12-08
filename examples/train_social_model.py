@@ -10,7 +10,7 @@ from general_utils import now_to_str
 from load_model_config import ModelConfig
 from load_model_config import load_model_config
 from social_lstm.my_social_model import MySocialModel
-from provide_train_test import provide_train_test
+from datasets.provide_train_test import provide_train_test
 
 
 def load_train_args() -> Namespace:
