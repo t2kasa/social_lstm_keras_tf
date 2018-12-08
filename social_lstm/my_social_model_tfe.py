@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 from social_lstm.grid_tfe import compute_social_tensor
-from tfe_normal_sampler import normal2d_sample
+from social_lstm.tfe_normal_sampler import normal2d_sample
 
 
 class SocialLSTM(tf.keras.Model):

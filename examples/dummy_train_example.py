@@ -3,7 +3,7 @@ from argparse import Namespace
 import numpy as np
 import tensorflow as tf
 
-from my_social_model_tfe import SocialLSTM
+from social_lstm.my_social_model_tfe import SocialLSTM
 
 if __name__ == '__main__':
     tf.enable_eager_execution()

@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from tfe_normal_sampler import build_mvn
+from social_lstm.tfe_normal_sampler import build_mvn
 
 
 def test_build_mvn():

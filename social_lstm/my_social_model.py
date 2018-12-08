@@ -7,9 +7,9 @@ from keras.optimizers import RMSprop
 
 from general_utils import pxy_dim, out_dim
 from load_model_config import ModelConfig
-from tf_normal_sampler import normal2d_log_pdf
-from tf_normal_sampler import normal2d_sample
-from grid import tf_grid_mask
+from social_lstm.tf_normal_sampler import normal2d_log_pdf
+from social_lstm.tf_normal_sampler import normal2d_sample
+from social_lstm.grid import tf_grid_mask
 from general_utils import get_image_size
 
 
