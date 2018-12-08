@@ -1,17 +1,18 @@
-from argparse import Namespace
-
-import numpy as np
 import tensorflow as tf
 
-from tfe_normal_sampler import normal2d_sample
 from grid_tfe import compute_social_tensor
+from tfe_normal_sampler import normal2d_sample
 
 
 class SocialLSTM(tf.keras.Model):
-    def __init__(self, cell_side, n_side_cells, lstm_dim, emb_dim, out_dim=5):
+    def __init__(self, pred_len, cell_side, n_side_cells, lstm_dim, emb_dim,
+                 out_dim=5):
         super(SocialLSTM, self).__init__()
+        self.pred_len = pred_len
         self.cell_side = cell_side
         self.n_side_cells = n_side_cells
+        self.lstm_dim = lstm_dim
+        self.emb_dim = emb_dim
 
         self.lstm_layer = tf.keras.layers.LSTM(lstm_dim, return_state=True)
         self.W_e_relu = tf.keras.layers.Dense(emb_dim, activation="relu")
@@ -21,17 +22,19 @@ class SocialLSTM(tf.keras.Model):
     def call(self, inputs, training=None, mask=None):
         x_input = inputs
 
+        batch_size, obs_len, max_n_peds, pxy_dim = tf.shape(x_input).numpy()
+
         # TODO: if training is True, x_input needs to have ground truth for prediction step.
 
-        prev_h_t = tf.zeros((1, args.max_n_peds, args.n_states))
-        prev_c_t = tf.zeros((1, args.max_n_peds, args.n_states))
+        prev_h_t = tf.zeros((1, max_n_peds, self.lstm_dim))
+        prev_c_t = tf.zeros((1, max_n_peds, self.lstm_dim))
 
         # ----------------------------------------------------------------------
         # observation step
         # ----------------------------------------------------------------------
 
         o_obs_batch = []
-        for t in range(args.obs_len):
+        for t in range(obs_len):
             x_t = x_input[:, t, :, :]
             h_t, c_t, o_t = self.perform_step_t(x_t, prev_h_t, prev_c_t)
             o_obs_batch.append(o_t)
@@ -59,7 +62,7 @@ class SocialLSTM(tf.keras.Model):
         # (b, obs_len, max_n_peds, out_dim) => (b, max_n_peds, out_dim)
         prev_o_t = o_obs_batch[:, -1, :, :]
 
-        for t in range(args.pred_len):
+        for t in range(self.pred_len):
             # assume all the pedestrians in the final observation frame are
             # exist in the prediction frames.
             pred_pos_t = normal2d_sample(prev_o_t)
@@ -75,6 +78,7 @@ class SocialLSTM(tf.keras.Model):
         return o_pred_batch
 
     def perform_step_t(self, x_t, prev_h_t, prev_c_t):
+        batch_size, max_n_peds, _ = tf.shape(x_t).numpy()
         h_t, c_t, o_t = [], [], []
 
         # compute social tensor
@@ -89,12 +93,12 @@ class SocialLSTM(tf.keras.Model):
         a_t = self.W_a_relu(social_tensors_t)
         emb_t = tf.concat([e_t, a_t], axis=-1)
         prev_states_t = [[prev_h_t[:, i], prev_c_t[:, i]] for i in
-                         range(args.max_n_peds)]
+                         range(max_n_peds)]
 
-        for i in range(args.max_n_peds):
+        for i in range(max_n_peds):
             # build concatenated embedding states as LSTM input
             emb_it = emb_t[:, i, :]
-            emb_it = tf.reshape(emb_it, (batch_size, 1, 2 * args.emb_dim))
+            emb_it = tf.reshape(emb_it, (batch_size, 1, 2 * self.emb_dim))
 
             lstm_output, h_it, c_it = self.lstm_layer(emb_it, prev_states_t[i])
             o_it = self.W_p(lstm_output)
@@ -112,33 +116,3 @@ def _stack_permute_axis_zero(xs):
     perm = [1, 0] + list(range(2, xs.shape.ndims))
     xs = tf.transpose(xs, perm=perm)
     return xs
-
-
-if __name__ == '__main__':
-    tf.enable_eager_execution()
-    args = Namespace(obs_len=3, pred_len=2, max_n_peds=52, pxy_dim=3,
-                     cell_side=0.5, n_side_cells=4, n_states=32, emb_dim=16,
-                     out_dim=5)
-
-    # my implementation works only when the batch size equals to 1.
-    batch_size = 1
-    x_input = np.random.randn(batch_size, args.obs_len, args.max_n_peds,
-                              args.pxy_dim)
-    x_input = tf.convert_to_tensor(x_input, dtype=tf.float32)
-
-    social_lstm = SocialLSTM(args.cell_side, args.n_side_cells, args.n_states,
-                             args.emb_dim, args.out_dim)
-    social_lstm.call(x_input)
-    print('passed!')
-    exit(0)
-
-    lr = 0.003
-    optimizer = tf.train.RMSPropOptimizer(learning_rate=lr)
-
-    # # 本当に学習に必要なモデルはこっちのはず
-    # self.train_model = Model([self.x_input, self.grid_input, self.zeros_input],
-    #                          o_pred_batch)
-    # optimizer = RMSprop(lr=lr)
-    # self.train_model.compile(optimizer, self._compute_loss)
-    # self.sample_model = Model([self.x_input, self.grid_input, self.zeros_input],
-    #                           x_pred_batch)
