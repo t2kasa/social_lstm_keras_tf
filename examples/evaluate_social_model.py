@@ -7,10 +7,10 @@ import numpy as np
 
 from datasets.data_utils import obs_pred_split
 from social_lstm.metrics import compute_abe, compute_fde
-from load_model_config import load_model_config
+from commons.load_model_config import load_model_config
 from social_lstm.my_social_model import MySocialModel
 from datasets.provide_train_test import provide_train_test
-from vizualize_trajectories import visualize_trajectories
+from commons.vizualize_trajectories import visualize_trajectories
 
 
 def _load_eval_args() -> Namespace:

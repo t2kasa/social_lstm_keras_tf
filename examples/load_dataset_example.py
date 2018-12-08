@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from datasets.single_dataset import SingleDataset
-from general_utils import DatasetKind
+from commons.general_utils import DatasetKind
 from preprocessors.eth_dataset_preprocessor import EthDatasetPreprosessor
 
 

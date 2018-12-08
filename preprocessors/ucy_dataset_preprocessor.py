@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from general_utils import get_image_size
+from commons.general_utils import get_image_size
 
 
 class UcyDatasetPreprocessor:

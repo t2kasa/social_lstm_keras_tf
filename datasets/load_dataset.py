@@ -1,9 +1,9 @@
 import numpy as np
 
 from datasets.single_dataset import SingleDataset
-from general_utils import get_data_dir
-from general_utils import get_image_size
-from load_model_config import ModelConfig
+from commons.general_utils import get_data_dir
+from commons.general_utils import get_image_size
+from commons.load_model_config import ModelConfig
 from preprocessors.preprocessors_utils import create_dataset_preprocessor
 
 

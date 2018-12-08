@@ -1,4 +1,4 @@
-from general_utils import DatasetKind, _check_dataset_kind
+from commons.general_utils import DatasetKind, _check_dataset_kind
 from preprocessors.eth_dataset_preprocessor import EthDatasetPreprosessor
 from preprocessors.ucy_dataset_preprocessor import UcyDatasetPreprocessor
 

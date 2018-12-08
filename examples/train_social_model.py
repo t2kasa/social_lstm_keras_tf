@@ -5,10 +5,10 @@ from shutil import copyfile
 import matplotlib.pyplot as plt
 
 from datasets.data_utils import obs_pred_split
-from general_utils import dump_json_file
-from general_utils import now_to_str
-from load_model_config import ModelConfig
-from load_model_config import load_model_config
+from commons.general_utils import dump_json_file
+from commons.general_utils import now_to_str
+from commons.load_model_config import ModelConfig
+from commons.load_model_config import load_model_config
 from social_lstm.my_social_model import MySocialModel
 from datasets.provide_train_test import provide_train_test
 
