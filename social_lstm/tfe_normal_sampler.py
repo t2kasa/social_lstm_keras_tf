@@ -55,16 +55,7 @@ def normal2d_log_pdf(outputs, positions):
 def normal2d_sample(outputs):
     """
     :param outputs: (..., 5)
-    :return: (..., 2)
+    :return: (tf.reduce_prod(...), 2)
     """
-    original_output_shape = tf.shape(outputs).numpy()
     outputs = tf.reshape(outputs, [-1, 5])
-    mvn = build_mvn(outputs)
-    samples = mvn.sample()
-    sample_dim = tf.shape(samples).numpy()[-1]
-
-    expected_sample_shape = tf.concat(
-        [original_output_shape[:-1], [sample_dim]], axis=0)
-
-    samples = tf.reshape(samples, expected_sample_shape)
-    return samples
+    return build_mvn(outputs).sample()

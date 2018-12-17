@@ -1,10 +1,10 @@
 import numpy as np
 
-from general_utils import DatasetKind
-from general_utils import _check_dataset_kind
-from general_utils import get_data_dir
-from load_dataset import load_dataset_from_config, load_dataset
-from load_model_config import ModelConfig
+from commons.general_utils import DatasetKind
+from commons.general_utils import _check_dataset_kind
+from commons.general_utils import get_data_dir
+from datasets.load_dataset import load_dataset_from_config, load_dataset
+from commons.load_model_config import ModelConfig
 
 
 def provide_train_test(config: ModelConfig):

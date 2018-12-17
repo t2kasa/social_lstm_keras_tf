@@ -34,6 +34,13 @@ python train_social_model.py --trained_model_config path/to/config.json --traine
 * work only on batch size = 1
 * require much RAM (use almost all 16GB in my environment)
 
+## TODO
+
+* [ ] Clean up experimental implementation
+* [ ] Add trained sample for demo
+* [ ] Occupancy map implementation
+
+
 ## References
 
 * Alexandre Alahi, Kratarth Goel, Vignesh Ramanathan, Alexandre Robicquet, Li Fei-Fei, Silvio Savarese. **Social LSTM: Human Trajectory Prediction in Crowded Spaces**. The IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2016, pp. 961-971
