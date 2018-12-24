@@ -3,9 +3,6 @@ import tensorflow_probability as tfp
 from tensorflow.contrib.keras.api.keras.layers import Multiply
 
 
-# TODO: refactoring and add unittests
-
-
 def build_mvn(outputs) -> tfp.distributions.MultivariateNormalTriL:
     """
     :param outputs: (n_samples, 5)
@@ -36,8 +33,8 @@ def build_mvn(outputs) -> tfp.distributions.MultivariateNormalTriL:
     cov = tf.transpose(cov, perm=(1, 0))
     cov = tf.reshape(cov, (-1, 2, 2))
 
-    scale_tril = tf.cholesky(cov)
-    mvn = tfp.distributions.MultivariateNormalTriL(loc, scale_tril)
+    scale = tf.cholesky(cov)
+    mvn = tfp.distributions.MultivariateNormalTriL(loc, scale)
     return mvn
 
 
