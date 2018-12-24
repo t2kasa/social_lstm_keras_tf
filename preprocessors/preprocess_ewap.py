@@ -28,6 +28,12 @@ class EwapPreprocessor:
         self.raw_pos_df = _load_obsmat_file(data_dir)
 
     def preprocess_frame_data(self):
+        pos_df_pre = self._normalize_pos_df()
+
+        # TODO: interpolate and thin out
+        return pos_df_pre
+
+    def _normalize_pos_df(self):
         # position preprocessing
         xy = np.array(self.raw_pos_df[["px", "py"]])
         # world xy to image xy: inverse mapping of homography
@@ -35,15 +41,13 @@ class EwapPreprocessor:
         # normalize
         xy = xy / self.image_size
 
-        pos_df_pre = pd.DataFrame({
+        pos_df_norm = pd.DataFrame({
             "frame": self.raw_pos_df["frame"],
             "id": self.raw_pos_df["id"],
             "x": xy[:, 0],
             "y": xy[:, 1]
         })
-
-        # TODO: interpolate and thin out
-        return pos_df_pre
+        return pos_df_norm
 
     @staticmethod
     def _world_to_image_xy(world_xy, homography):
