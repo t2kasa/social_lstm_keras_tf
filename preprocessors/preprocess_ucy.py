@@ -1,22 +1,33 @@
-import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from commons.general_utils import get_image_size
+
+def preprocess_ucy(data_dir):
+    return UcyPreprocessor(data_dir).preprocess_frame_data()
 
 
 class UcyPreprocessor:
     ped_start_line_words = "Num of control points"
-    vsp_columns = ["x", "y", "frame", "gaze", "dummy1", "dummy2", "dummy3",
-                   "dummy4"]
+    # _1, _2, _3, and _4 are dummy columns, which are not used.
+    vsp_cols = ['x', 'y', 'frame', 'gaze', '_1', '_2', '_3', '_4']
+
+    image_sizes = {
+        'crowds_zara01': (720, 576),
+        'crowds_zara02': (720, 576),
+        'students003': (720, 576)
+    }
 
     # arrange frame interval
     frame_interval = 10
 
-    def __init__(self, data_dir, dataset_kind):
+    def __init__(self, data_dir, image_size=None):
+        name = Path(data_dir).name
         self._data_dir = data_dir
-        self._dataset_kind = dataset_kind
+        self.image_size = image_size or self.image_sizes.get(name)
+        if self.image_size is None:
+            raise ValueError(f'`image_size` is invalid: {image_size}')
 
     def preprocess_frame_data(self):
         lines = self._read_lines(self._get_vsp_file(self._data_dir))
@@ -32,7 +43,7 @@ class UcyPreprocessor:
             n_pos_i = int(lines[start_index].split()[0])
             pos_lines_i = lines[start_index + 1:start_index + 1 + n_pos_i]
             pos_df_raw_i = pd.DataFrame([line.split() for line in pos_lines_i],
-                                        columns=self.vsp_columns)
+                                        columns=self.vsp_cols)
             # in UCY dataset, pedestiran "id" is not given,
             # therefore add "id" column with serial number.
             pos_df_raw_i["id"] = i + 1
@@ -47,7 +58,7 @@ class UcyPreprocessor:
         # interpolate & normalize & thin out
         pos_df_preprocessed = self.interpolate_pos_df(pos_df_raw)
         pos_df_preprocessed = self.normalize_pos_df(pos_df_preprocessed,
-                                                    self._dataset_kind)
+                                                    self.image_size)
         pos_df_preprocessed = self.thin_out_pos_df(pos_df_preprocessed,
                                                    self.frame_interval)
         pos_df_preprocessed = pos_df_preprocessed.sort_values(["frame", "id"])
@@ -56,10 +67,7 @@ class UcyPreprocessor:
 
     @staticmethod
     def _get_vsp_file(data_dir):
-        vsp_file_name = "{}.vsp".format(os.path.basename(data_dir))
-        vsp_file = os.path.join(data_dir, vsp_file_name)
-
-        return vsp_file
+        return str(Path(data_dir, f'{Path(data_dir).name}.vsp'))
 
     @staticmethod
     def _read_lines(file):
@@ -88,8 +96,8 @@ class UcyPreprocessor:
         return pos_df_interp
 
     @staticmethod
-    def normalize_pos_df(pos_df, dataset_kind):
-        image_size = np.array(get_image_size(dataset_kind))
+    def normalize_pos_df(pos_df, image_size):
+        image_size = np.array(image_size)
 
         xy = np.array(pos_df[["x", "y"]])
         # originally (0, 0) is the center of the frame,

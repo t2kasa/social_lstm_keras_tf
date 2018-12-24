@@ -1,17 +1,29 @@
 # social_lstm_keras_tf
 
-Social LSTM implementation with Keras (and TensorFlow as backend)  
-NOTE: experimental implementation
+Social LSTM implementation with TensorFlow.
 
-## Requirements (show primary packages only)
+Important Notes:
 
-* Python 3.6.0+
-* Keras 2.1.5+
-* TensorFlow 1.6.0+
+* **Unofficial and experimental implementation.**
+* (2018/12/24) I have been updating my codes to correctly train and evaluate Social LSTM.
+
+## Requirements
+
+Works only Python 3. My environment is built on [Anaconda](https://www.anaconda.com/download/). you Install it and the following packages.
+
+* TensorFlow 1.x
+* [patool](https://github.com/wummel/patool)
 
 ## Usage
 
 ### 1. Preparation
+
+Download datasets by:
+```bash
+cd examples
+python prepare_dataset.py
+```
+
 
 Set `dataset` attribute of the config files in `configs/`.
 
