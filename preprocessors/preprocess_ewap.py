@@ -3,6 +3,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from preprocessors.utils import interpolate_pos_df
+from preprocessors.utils import thin_out_pos_df
+
 
 def preprocess_ewap(data_dir):
     return EwapPreprocessor(data_dir).preprocess_frame_data()
@@ -16,6 +19,8 @@ class EwapPreprocessor:
         'seq_hotel': (720, 576)
     }
 
+    frame_interval = 10
+
     def __init__(self, data_dir, image_size=None):
         name = Path(data_dir).name
         self.image_size = image_size or self.image_sizes[name]
@@ -23,25 +28,29 @@ class EwapPreprocessor:
             raise ValueError(f'`image_size` is invalid: {image_size}')
 
         # read homography matrix
-        self.homography = np.genfromtxt(str(Path(data_dir, "H.txt")))
+        self.homography = _read_homography_file(data_dir)
         # read trajectory data
-        self.raw_pos_df = _load_obsmat_file(data_dir)
+        self.raw_pos_df = _read_obsmat_file(data_dir)
 
     def preprocess_frame_data(self):
-        # position preprocessing
-        xy = np.array(self.raw_pos_df[["px", "py"]])
-        # world xy to image xy: inverse mapping of homography
+        pos_df_pre = interpolate_pos_df(self.raw_pos_df)
+        pos_df_pre = thin_out_pos_df(pos_df_pre, self.frame_interval)
+        pos_df_pre = self._normalize_pos_df(pos_df_pre)
+        pos_df_pre = pos_df_pre.sort_values(['frame', 'id'])
+        return pos_df_pre
+
+    def _normalize_pos_df(self, pos_df):
+        xy = np.array(pos_df[["x", "y"]])
         xy = self._world_to_image_xy(xy, self.homography)
-        # normalize
         xy = xy / self.image_size
 
-        preprocessed_df = pd.DataFrame({
-            "frame": self.raw_pos_df["frame"],
-            "id": self.raw_pos_df["id"],
+        pos_df_norm = pd.DataFrame({
+            "frame": pos_df["frame"],
+            "id": pos_df["id"],
             "x": xy[:, 0],
             "y": xy[:, 1]
         })
-        return preprocessed_df
+        return pos_df_norm
 
     @staticmethod
     def _world_to_image_xy(world_xy, homography):
@@ -61,9 +70,15 @@ class EwapPreprocessor:
         return image_xy
 
 
-def _load_obsmat_file(data_dir):
+def _read_homography_file(data_dir):
+    return np.genfromtxt(str(Path(data_dir, "H.txt")))
+
+
+def _read_obsmat_file(data_dir):
+    obs_cols = ["frame", "id", "px", "pz", "py", "vx", "vz", "vy"]
     obsmat_file = str(Path(data_dir, "obsmat.txt"))
-    obs_columns = ["frame", "id", "px", "pz", "py", "vx", "vz", "vy"]
-    obs_df = pd.DataFrame(np.genfromtxt(obsmat_file), columns=obs_columns)
+    obs_df = pd.DataFrame(np.genfromtxt(obsmat_file), columns=obs_cols)
+
     pos_df = obs_df[["frame", "id", "px", "py"]]
+    pos_df.columns = ["frame", "id", "x", "y"]
     return pos_df

@@ -3,6 +3,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from preprocessors.utils import interpolate_pos_df
+from preprocessors.utils import thin_out_pos_df
+
 
 def preprocess_ucy(data_dir):
     return UcyPreprocessor(data_dir).preprocess_frame_data()
@@ -51,19 +54,16 @@ class UcyPreprocessor:
             pos_df_raw.append(pos_df_raw_i)
 
         pos_df_raw = pd.concat(pos_df_raw)
-        # remain only (frame, id, x, y)
         pos_df_raw = pos_df_raw[['frame', 'id', 'x', 'y']].astype(np.float32)
         pos_df_raw = pos_df_raw.reset_index(drop=True)
 
-        # interpolate & normalize & thin out
-        pos_df_preprocessed = self.interpolate_pos_df(pos_df_raw)
-        pos_df_preprocessed = self.normalize_pos_df(pos_df_preprocessed,
-                                                    self.image_size)
-        pos_df_preprocessed = self.thin_out_pos_df(pos_df_preprocessed,
-                                                   self.frame_interval)
-        pos_df_preprocessed = pos_df_preprocessed.sort_values(['frame', 'id'])
+        # interpolate, thin out, and normalize
+        pos_df_pre = interpolate_pos_df(pos_df_raw)
+        pos_df_pre = thin_out_pos_df(pos_df_pre, self.frame_interval)
+        pos_df_pre = self.normalize_pos_df(pos_df_pre, self.image_size)
+        pos_df_pre = pos_df_pre.sort_values(['frame', 'id'])
 
-        return pos_df_preprocessed
+        return pos_df_pre
 
     @staticmethod
     def _get_vsp_file(data_dir):
@@ -73,27 +73,6 @@ class UcyPreprocessor:
     def _read_lines(file):
         with open(file, 'r') as f:
             return f.readlines()
-
-    @staticmethod
-    def interpolate_pos_df(pos_df):
-        pos_df_interp = []
-
-        for pid, pid_df in pos_df.groupby('id'):
-            observed_frames = np.array(pid_df['frame'])
-            frame_range = np.arange(observed_frames[0], observed_frames[-1] + 1)
-
-            x_interp = np.interp(frame_range, pid_df['frame'], pid_df['x'])
-            y_interp = np.interp(frame_range, pid_df['frame'], pid_df['y'])
-
-            pos_df_interp.append(pd.DataFrame({
-                'frame': frame_range,
-                'id': pid,
-                'x': x_interp,
-                'y': y_interp
-            }))
-
-        pos_df_interp = pd.concat(pos_df_interp)
-        return pos_df_interp
 
     @staticmethod
     def normalize_pos_df(pos_df, image_size):
@@ -118,14 +97,3 @@ class UcyPreprocessor:
             'y': xy[:, 1]
         })
         return pos_df_norm
-
-    @staticmethod
-    def thin_out_pos_df(pos_df, interval):
-        all_frames = pos_df['frame'].unique()
-        remained_frames = np.arange(all_frames[0], all_frames[-1] + 1, interval)
-        remained_rows = pos_df['frame'].isin(remained_frames)
-
-        pos_df_thinned_out = pos_df[remained_rows]
-        pos_df_thinned_out = pos_df_thinned_out.reset_index(drop=True)
-
-        return pos_df_thinned_out
