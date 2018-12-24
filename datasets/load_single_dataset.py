@@ -6,16 +6,28 @@ import tensorflow as tf
 from preprocessors.preprocess_data import preprocess_data
 
 
-def load_single_dataset(data_dir, args):
-    obs_true_seqs, pred_true_seqs = build_obs_pred_sequences(
-        data_dir, args.obs_len, args.pred_len)
+def load_single_dataset(data_dirs, args):
+    """Builds a single dataset from one or more data directories.
 
-    n_seqs = len(obs_true_seqs)
+    :param str|list[str] data_dirs: one or more data directories.
+    :param args: arguments. this function actually uses only `args.obs_len` and
+        `args.pred_len`.
+    :return: a single dataset.
+    """
+    if isinstance(data_dirs, str):
+        data_dirs = [data_dirs]
+
+    seqs = [build_obs_pred_sequences(d, args.obs_len, args.pred_len) for d in
+            data_dirs]
+    obs_seqs, pred_seqs = zip(*seqs)
+    obs_seqs, pred_seqs = sum(obs_seqs, []), sum(pred_seqs, [])
+
+    n_seqs = len(obs_seqs)
     obs_ds = tf.data.Dataset.from_generator(
-        _seqs_generator(obs_true_seqs), tf.float32,
+        _seqs_generator(obs_seqs), tf.float32,
         tf.TensorShape([args.obs_len, None, 2]))
     pred_ds = tf.data.Dataset.from_generator(
-        _seqs_generator(pred_true_seqs), tf.float32,
+        _seqs_generator(pred_seqs), tf.float32,
         tf.TensorShape([args.pred_len, None, 2]))
 
     return tf.data.Dataset.zip((obs_ds, pred_ds)).shuffle(n_seqs).batch(1)
