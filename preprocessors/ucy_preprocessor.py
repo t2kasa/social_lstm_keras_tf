@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -9,12 +9,21 @@ class UcyPreprocessor:
     vsp_columns = ["x", "y", "frame", "gaze", "dummy1", "dummy2", "dummy3",
                    "dummy4"]
 
+    image_sizes = {
+        'crowds_zara01': (720, 576),
+        'crowds_zara02': (720, 576),
+        'students003': (720, 576)
+    }
+
     # arrange frame interval
     frame_interval = 10
 
-    def __init__(self, data_dir, image_size):
+    def __init__(self, data_dir, image_size=None):
+        name = Path(data_dir).name
         self._data_dir = data_dir
-        self.image_size = image_size
+        self.image_size = image_size or self.image_sizes.get(name)
+        if self.image_size is None:
+            raise ValueError(f'`image_size` is invalid: {image_size}')
 
     def preprocess_frame_data(self):
         lines = self._read_lines(self._get_vsp_file(self._data_dir))
@@ -54,10 +63,7 @@ class UcyPreprocessor:
 
     @staticmethod
     def _get_vsp_file(data_dir):
-        vsp_file_name = "{}.vsp".format(os.path.basename(data_dir))
-        vsp_file = os.path.join(data_dir, vsp_file_name)
-
-        return vsp_file
+        return str(Path(data_dir, f'{Path(data_dir).name}.vsp'))
 
     @staticmethod
     def _read_lines(file):
