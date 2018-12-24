@@ -7,10 +7,6 @@ from preprocessors.utils import interpolate_pos_df
 from preprocessors.utils import thin_out_pos_df
 
 
-def preprocess_ucy(data_dir):
-    return UcyPreprocessor(data_dir).preprocess_frame_data()
-
-
 class UcyPreprocessor:
     ped_start_line_words = 'Num of control points'
     # _1, _2, _3, and _4 are dummy columns, which are not used.

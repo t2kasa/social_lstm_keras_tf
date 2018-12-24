@@ -7,10 +7,6 @@ from preprocessors.utils import interpolate_pos_df
 from preprocessors.utils import thin_out_pos_df
 
 
-def preprocess_ewap(data_dir):
-    return EwapPreprocessor(data_dir).preprocess_frame_data()
-
-
 class EwapPreprocessor:
     """Preprocessor for EWAP dataset."""
 
