@@ -5,9 +5,9 @@ NOTE: experimental implementation
 
 ## Requirements (show primary packages only)
 
-* Python 3.6.0+
-* Keras 2.1.5+
-* TensorFlow 1.6.0+
+* Python 3.6.x
+* TensorFlow 1.
+* [patool](https://github.com/wummel/patool)
 
 ## Usage
 
