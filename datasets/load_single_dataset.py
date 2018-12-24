@@ -6,7 +6,8 @@ import tensorflow as tf
 from preprocessors.preprocess_data import preprocess_data
 
 
-def load_single_dataset(data_dirs, obs_len, pred_len):
+def load_single_dataset(data_dirs, obs_len, pred_len, shuffle=True,
+                        batch_size=1):
     """Builds a single dataset from one or more data directories.
 
     :param str|list[str] data_dirs: one or more data directories.
@@ -29,7 +30,11 @@ def load_single_dataset(data_dirs, obs_len, pred_len):
         _seqs_generator(pred_seqs), tf.float32,
         tf.TensorShape([pred_len, None, 2]))
 
-    return tf.data.Dataset.zip((obs_ds, pred_ds)).shuffle(n_seqs).batch(1)
+    ds = tf.data.Dataset.zip((obs_ds, pred_ds))
+    if shuffle:
+        ds = ds.shuffle(n_seqs)
+    ds = ds.batch(batch_size)
+    return ds
 
 
 def build_obs_pred_sequences(data_dir, obs_len, pred_len):
