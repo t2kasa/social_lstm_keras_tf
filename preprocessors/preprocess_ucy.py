@@ -55,8 +55,8 @@ class UcyPreprocessor:
         pos_df_raw = pos_df_raw.reset_index(drop=True)
 
         # interpolate, thin out, and normalize
-        pos_df_pre = self.interpolate_pos_df(pos_df_raw)
-        pos_df_pre = self.thin_out_pos_df(pos_df_pre, self.frame_interval)
+        pos_df_pre = interpolate_pos_df(pos_df_raw)
+        pos_df_pre = thin_out_pos_df(pos_df_pre, self.frame_interval)
         pos_df_pre = self.normalize_pos_df(pos_df_pre, self.image_size)
         pos_df_pre = pos_df_pre.sort_values(['frame', 'id'])
 
@@ -70,27 +70,6 @@ class UcyPreprocessor:
     def _read_lines(file):
         with open(file, 'r') as f:
             return f.readlines()
-
-    @staticmethod
-    def interpolate_pos_df(pos_df):
-        pos_df_interp = []
-
-        for pid, pid_df in pos_df.groupby('id'):
-            observed_frames = np.array(pid_df['frame'])
-            frame_range = np.arange(observed_frames[0], observed_frames[-1] + 1)
-
-            x_interp = np.interp(frame_range, pid_df['frame'], pid_df['x'])
-            y_interp = np.interp(frame_range, pid_df['frame'], pid_df['y'])
-
-            pos_df_interp.append(pd.DataFrame({
-                'frame': frame_range,
-                'id': pid,
-                'x': x_interp,
-                'y': y_interp
-            }))
-
-        pos_df_interp = pd.concat(pos_df_interp)
-        return pos_df_interp
 
     @staticmethod
     def normalize_pos_df(pos_df, image_size):
@@ -116,13 +95,33 @@ class UcyPreprocessor:
         })
         return pos_df_norm
 
-    @staticmethod
-    def thin_out_pos_df(pos_df, interval):
-        all_frames = pos_df['frame'].unique()
-        remained_frames = np.arange(all_frames[0], all_frames[-1] + 1, interval)
-        remained_rows = pos_df['frame'].isin(remained_frames)
 
-        pos_df_thinned_out = pos_df[remained_rows]
-        pos_df_thinned_out = pos_df_thinned_out.reset_index(drop=True)
+def thin_out_pos_df(pos_df, interval):
+    all_frames = pos_df['frame'].unique()
+    remained_frames = np.arange(all_frames[0], all_frames[-1] + 1, interval)
+    remained_rows = pos_df['frame'].isin(remained_frames)
 
-        return pos_df_thinned_out
+    pos_df_thin = pos_df[remained_rows]
+    pos_df_thin = pos_df_thin.reset_index(drop=True)
+    return pos_df_thin
+
+
+def interpolate_pos_df(pos_df):
+    pos_df_interp = []
+
+    for pid, pid_df in pos_df.groupby('id'):
+        observed_frames = np.array(pid_df['frame'])
+        frame_range = np.arange(observed_frames[0], observed_frames[-1] + 1)
+
+        x_interp = np.interp(frame_range, pid_df['frame'], pid_df['x'])
+        y_interp = np.interp(frame_range, pid_df['frame'], pid_df['y'])
+
+        pos_df_interp.append(pd.DataFrame({
+            'frame': frame_range,
+            'id': pid,
+            'x': x_interp,
+            'y': y_interp
+        }))
+
+    pos_df_interp = pd.concat(pos_df_interp)
+    return pos_df_interp
