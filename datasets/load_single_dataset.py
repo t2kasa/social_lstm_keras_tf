@@ -3,11 +3,11 @@ from pathlib import Path
 import tensorflow as tf
 
 from datasets.single_dataset import extract_sequences
-from preprocessors.eth_preprocessor import EthPreprosessor
+from preprocessors.preprocess_ewap import EwapPreprocessor
 
 
 def build_dataset(data_dir, image_size, obs_len, pred_len):
-    preprocessor = EthPreprosessor(data_dir, image_size)
+    preprocessor = EwapPreprocessor(data_dir, image_size)
 
     # load and preprocess
     frame_df = preprocessor.preprocess_frame_data()

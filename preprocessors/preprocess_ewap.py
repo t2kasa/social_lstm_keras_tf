@@ -1,18 +1,29 @@
-import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from commons.general_utils import get_image_size
+
+def preprocess_ewap(data_dir):
+    return EwapPreprocessor(data_dir).preprocess_frame_data()
 
 
-class EthPreprosessor:
-    """Preprocessor for ETH dataset."""
+class EwapPreprocessor:
+    """Preprocessor for EWAP dataset."""
 
-    def __init__(self, data_dir, image_size):
-        self.image_size = image_size
+    image_sizes = {
+        'seq_eth': (640, 480),
+        'seq_hotel': (720, 576)
+    }
+
+    def __init__(self, data_dir, image_size=None):
+        name = Path(data_dir).name
+        self.image_size = image_size or self.image_sizes[name]
+        if self.image_size is None:
+            raise ValueError(f'`image_size` is invalid: {image_size}')
+
         # read homography matrix
-        self.homography = np.genfromtxt(os.path.join(data_dir, "H.txt"))
+        self.homography = np.genfromtxt(str(Path(data_dir, "H.txt")))
         # read trajectory data
         self.raw_pos_df = _load_obsmat_file(data_dir)
 
@@ -51,7 +62,7 @@ class EthPreprosessor:
 
 
 def _load_obsmat_file(data_dir):
-    obsmat_file = os.path.join(data_dir, "obsmat.txt")
+    obsmat_file = str(Path(data_dir, "obsmat.txt"))
     obs_columns = ["frame", "id", "px", "pz", "py", "vx", "vz", "vy"]
     obs_df = pd.DataFrame(np.genfromtxt(obsmat_file), columns=obs_columns)
     pos_df = obs_df[["frame", "id", "px", "py"]]
