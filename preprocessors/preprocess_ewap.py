@@ -35,13 +35,15 @@ class EwapPreprocessor:
         # normalize
         xy = xy / self.image_size
 
-        preprocessed_df = pd.DataFrame({
+        pos_df_pre = pd.DataFrame({
             "frame": self.raw_pos_df["frame"],
             "id": self.raw_pos_df["id"],
             "x": xy[:, 0],
             "y": xy[:, 1]
         })
-        return preprocessed_df
+
+        # TODO: interpolate and thin out
+        return pos_df_pre
 
     @staticmethod
     def _world_to_image_xy(world_xy, homography):
