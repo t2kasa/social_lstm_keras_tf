@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
 
+ucy_data_dir_names = ('crowds_zara01', 'crowds_zara02', 'students003')
+ewap_data_dir_names = ('seq_eth', 'seq_hotel')
+
 
 def thin_out_pos_df(pos_df, interval):
     all_frames = pos_df['frame'].unique()
