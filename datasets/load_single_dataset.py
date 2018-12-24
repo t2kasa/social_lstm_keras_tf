@@ -6,7 +6,7 @@ from datasets.single_dataset import extract_sequences
 from preprocessors.preprocess_ewap import EwapPreprocessor
 
 
-def build_dataset(data_dir, image_size, obs_len, pred_len):
+def build_obs_pred_sequences(data_dir, image_size, obs_len, pred_len):
     preprocessor = EwapPreprocessor(data_dir, image_size)
 
     # load and preprocess
@@ -30,8 +30,8 @@ def load_single_dataset(data_dir, args):
     else:  # eth
         image_size = (640, 480)
 
-    obs_true_seqs, pred_true_seqs = build_dataset(data_dir, image_size,
-                                                  args.obs_len, args.pred_len)
+    obs_true_seqs, pred_true_seqs = build_obs_pred_sequences(
+        data_dir, image_size, args.obs_len, args.pred_len)
 
     n_seqs = len(obs_true_seqs)
     obs_ds = tf.data.Dataset.from_generator(
