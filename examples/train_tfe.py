@@ -15,8 +15,8 @@ def load_args():
     # model params
     parser.add_argument('--obs_len', type=int, required=True)
     parser.add_argument('--pred_len', type=int, required=True)
-    parser.add_argument('--n_neighbor_pixels', type=int, required=True)
-    parser.add_argument('--cell_side', type=float, required=True)
+    parser.add_argument('--n_neighbor_pixels', type=int, default=32)
+    parser.add_argument('--cell_side', type=float, default=0.5)
     parser.add_argument('--n_side_cells', type=int, default=8)
     parser.add_argument('--lstm_dim', type=int, default=128)
     parser.add_argument('--emb_dim', type=int, default=64)
