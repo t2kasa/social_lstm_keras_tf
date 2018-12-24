@@ -5,7 +5,7 @@ from datasets.utils import download_and_arrange_datasets
 from preprocessors.preprocess_ucy import preprocess_ucy
 
 
-def test_ucy_preprocessor_init():
+def test_preprocess_ucy():
     with tempfile.TemporaryDirectory() as temp_dir:
         datasets_dir = download_and_arrange_datasets(temp_dir)
         ucy_dirs = Path(datasets_dir, 'ucy_dataset').glob('*')
