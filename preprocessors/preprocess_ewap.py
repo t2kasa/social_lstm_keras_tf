@@ -3,6 +3,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from preprocessors.preprocessors_utils import interpolate_pos_df
+from preprocessors.preprocessors_utils import thin_out_pos_df
+
 
 def preprocess_ewap(data_dir):
     return EwapPreprocessor(data_dir).preprocess_frame_data()
@@ -16,6 +19,8 @@ class EwapPreprocessor:
         'seq_hotel': (720, 576)
     }
 
+    frame_interval = 10
+
     def __init__(self, data_dir, image_size=None):
         name = Path(data_dir).name
         self.image_size = image_size or self.image_sizes[name]
@@ -28,22 +33,20 @@ class EwapPreprocessor:
         self.raw_pos_df = _load_obsmat_file(data_dir)
 
     def preprocess_frame_data(self):
-        pos_df_pre = self._normalize_pos_df()
-
-        # TODO: interpolate and thin out
+        pos_df_pre = interpolate_pos_df(self.raw_pos_df)
+        pos_df_pre = thin_out_pos_df(pos_df_pre, self.frame_interval)
+        pos_df_pre = self._normalize_pos_df(pos_df_pre)
+        pos_df_pre = pos_df_pre.sort_values(['frame', 'id'])
         return pos_df_pre
 
-    def _normalize_pos_df(self):
-        # position preprocessing
-        xy = np.array(self.raw_pos_df[["px", "py"]])
-        # world xy to image xy: inverse mapping of homography
+    def _normalize_pos_df(self, pos_df):
+        xy = np.array(pos_df[["px", "py"]])
         xy = self._world_to_image_xy(xy, self.homography)
-        # normalize
         xy = xy / self.image_size
 
         pos_df_norm = pd.DataFrame({
-            "frame": self.raw_pos_df["frame"],
-            "id": self.raw_pos_df["id"],
+            "frame": pos_df["frame"],
+            "id": pos_df["id"],
             "x": xy[:, 0],
             "y": xy[:, 1]
         })
