@@ -3,8 +3,6 @@ import os
 import numpy as np
 import pandas as pd
 
-from commons.general_utils import get_image_size
-
 
 class UcyPreprocessor:
     ped_start_line_words = "Num of control points"
@@ -14,9 +12,9 @@ class UcyPreprocessor:
     # arrange frame interval
     frame_interval = 10
 
-    def __init__(self, data_dir, dataset_kind):
+    def __init__(self, data_dir, image_size):
         self._data_dir = data_dir
-        self._dataset_kind = dataset_kind
+        self.image_size = image_size
 
     def preprocess_frame_data(self):
         lines = self._read_lines(self._get_vsp_file(self._data_dir))
@@ -47,7 +45,7 @@ class UcyPreprocessor:
         # interpolate & normalize & thin out
         pos_df_preprocessed = self.interpolate_pos_df(pos_df_raw)
         pos_df_preprocessed = self.normalize_pos_df(pos_df_preprocessed,
-                                                    self._dataset_kind)
+                                                    self.image_size)
         pos_df_preprocessed = self.thin_out_pos_df(pos_df_preprocessed,
                                                    self.frame_interval)
         pos_df_preprocessed = pos_df_preprocessed.sort_values(["frame", "id"])
@@ -88,8 +86,8 @@ class UcyPreprocessor:
         return pos_df_interp
 
     @staticmethod
-    def normalize_pos_df(pos_df, dataset_kind):
-        image_size = np.array(get_image_size(dataset_kind))
+    def normalize_pos_df(pos_df, image_size):
+        image_size = np.array(image_size)
 
         xy = np.array(pos_df[["x", "y"]])
         # originally (0, 0) is the center of the frame,
