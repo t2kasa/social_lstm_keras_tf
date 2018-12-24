@@ -1,34 +1,7 @@
-from functools import reduce
-
 import numpy as np
 
-
-def extract_sequences(frame_df, seq_len):
-    """Extracts sequences as a dataset.
-
-    :param frame_df: tabled pedestrian positions data. it is expected that the
-        data frame has four columns 'frame', 'id', 'x', and 'y'.
-    :param seq_len: each sequence length.
-    :return: [t, t + seq_len) sequences.
-    """
-    sequences = []
-    all_frames = frame_df['frame'].unique()
-    for i in range(len(all_frames) - seq_len + 1):
-        frame_range = all_frames[i:i + seq_len]
-        df = frame_df[frame_df['frame'].isin(frame_range)]
-
-        # collect pedestrian ids when the pedestrians exist in the all frames
-        target_pids = _extract_pids_in_all_frames(df)
-        # skip when there are no pedestrians
-        if not target_pids:
-            continue
-
-        curr_target_df = df[df['id'].isin(target_pids)]
-        # built sequence shape is (seq_len, n_pids, 2)
-        curr_seq = _build_sequence(curr_target_df)
-        sequences.append(curr_seq)
-
-    return sequences
+from datasets.load_single_dataset import _extract_pids_in_all_frames, \
+    _build_sequence
 
 
 class SingleDataset:
@@ -74,15 +47,3 @@ class SingleDataset:
                                self.max_n_peds, lstm_state_dim), np.float32)
 
         return self.x_data, self.y_data, self.grid_data, zeros_data
-
-
-def _extract_pids_in_all_frames(df):
-    pids = set(
-        reduce(np.intersect1d, [g['id'] for _, g in df.groupby('frame')]))
-    return pids
-
-
-def _build_sequence(target_df):
-    seq = np.array([np.array(df[['x', 'y']]) for _, df in
-                    target_df.groupby('frame')])
-    return seq
