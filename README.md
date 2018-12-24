@@ -13,6 +13,13 @@ NOTE: experimental implementation
 
 ### 1. Preparation
 
+Download datasets by:
+```bash
+cd examples
+python prepare_dataset.py
+```
+
+
 Set `dataset` attribute of the config files in `configs/`.
 
 ### 2. Training
