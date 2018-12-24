@@ -28,9 +28,9 @@ class EwapPreprocessor:
             raise ValueError(f'`image_size` is invalid: {image_size}')
 
         # read homography matrix
-        self.homography = np.genfromtxt(str(Path(data_dir, "H.txt")))
+        self.homography = _read_homography_file(data_dir)
         # read trajectory data
-        self.raw_pos_df = _load_obsmat_file(data_dir)
+        self.raw_pos_df = _read_obsmat_file(data_dir)
 
     def preprocess_frame_data(self):
         pos_df_pre = interpolate_pos_df(self.raw_pos_df)
@@ -70,7 +70,11 @@ class EwapPreprocessor:
         return image_xy
 
 
-def _load_obsmat_file(data_dir):
+def _read_homography_file(data_dir):
+    return np.genfromtxt(str(Path(data_dir, "H.txt")))
+
+
+def _read_obsmat_file(data_dir):
     obsmat_file = str(Path(data_dir, "obsmat.txt"))
     obs_columns = ["frame", "id", "px", "pz", "py", "vx", "vz", "vy"]
     obs_df = pd.DataFrame(np.genfromtxt(obsmat_file), columns=obs_columns)
