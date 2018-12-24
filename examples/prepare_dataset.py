@@ -1,6 +1,6 @@
 import os
 
-from datasets.utils.download_datasets import download_and_arrange_datasets
+from datasets.utils import download_and_arrange_datasets
 
 if __name__ == '__main__':
     here = os.path.abspath(os.path.dirname(__file__))
