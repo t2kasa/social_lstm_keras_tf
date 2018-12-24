@@ -1,19 +1,12 @@
-from pathlib import Path
-
 import tensorflow as tf
 
 from datasets.single_dataset import extract_sequences
-from preprocessors.preprocess_ewap import EwapPreprocessor
+from preprocessors.preprocess_data import preprocess_data
 
 
-def build_obs_pred_sequences(data_dir, image_size, obs_len, pred_len):
-    preprocessor = EwapPreprocessor(data_dir, image_size)
-
-    # load and preprocess
-    frame_df = preprocessor.preprocess_frame_data()
-
-    # extract
-    all_sequences = extract_sequences(frame_df, obs_len + pred_len)
+def build_obs_pred_sequences(data_dir, obs_len, pred_len):
+    pos_df = preprocess_data(data_dir)
+    all_sequences = extract_sequences(pos_df, obs_len + pred_len)
 
     obs_true_seqs, pred_true_seqs = [], []
     for seq in all_sequences:
@@ -24,14 +17,8 @@ def build_obs_pred_sequences(data_dir, image_size, obs_len, pred_len):
 
 
 def load_single_dataset(data_dir, args):
-    dataset_name = Path(data_dir).stem
-    if dataset_name == 'hotel':
-        image_size = (750, 576)
-    else:  # eth
-        image_size = (640, 480)
-
     obs_true_seqs, pred_true_seqs = build_obs_pred_sequences(
-        data_dir, image_size, args.obs_len, args.pred_len)
+        data_dir, args.obs_len, args.pred_len)
 
     n_seqs = len(obs_true_seqs)
     obs_ds = tf.data.Dataset.from_generator(
