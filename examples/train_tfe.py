@@ -4,6 +4,7 @@ import tensorflow as tf
 
 from datasets.load_single_dataset import load_single_dataset
 from social_lstm.my_social_model_tfe import SocialLSTM
+from social_lstm.losses import compute_loss
 
 
 def load_args():
@@ -36,19 +37,21 @@ def main():
     train_ds_list = [load_single_dataset(d, args) for d in args.train_data_dirs]
     # test_ds_list = [load_single_dataset(d, args) for d in args.test_data_dirs]
 
-    # test_datasets = [_load_single_dataset(d, args) for d in args.test_data_dirs]
+    train_ds = train_ds_list[0]
+    optimizer = tf.train.RMSPropOptimizer(learning_rate=args.learning_rate)
 
-    x_ds, y_ds = train_ds_list[0]
-
-    # test_ds = test_datasets[0]
-
-    # xs = [tf.random.normal([7, 4, 2])]
     social_lstm = SocialLSTM(args.pred_len, args.cell_side, args.n_side_cells,
                              args.lstm_dim, args.emb_dim)
 
-    for i, x in enumerate(x_ds):
+    for i, (pos_true_obs, pos_true_pred) in enumerate(train_ds):
         print(i)
-        social_lstm.call(x)
+        with tf.GradientTape() as tape:
+            o_pred = social_lstm(pos_true_obs)
+            loss_value = compute_loss(o_pred, pos_true_pred)
+
+        print(loss_value)
+        grads = tape.gradient(loss_value, social_lstm.variables)
+        optimizer.apply_gradients(zip(grads, social_lstm.variables))
 
 
 if __name__ == '__main__':
