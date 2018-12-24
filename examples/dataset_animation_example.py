@@ -3,44 +3,47 @@ import matplotlib
 # to show animation in PyCharm
 matplotlib.use('Qt5Agg')  # NOQA
 
-from pathlib import Path
-
+from argparse import ArgumentParser
 import matplotlib.pyplot as plt
 import numpy as np
+import tensorflow as tf
 
 from matplotlib.animation import FuncAnimation
-from commons.general_utils import DatasetKind
-from preprocessors.eth_preprocessor import EthPreprosessor
+from datasets.load_single_dataset import load_single_dataset
 
 
 class TrajectoryAnimator:
-    def __init__(self, df):
-        self.df = df
+    def __init__(self, ds):
+        self.ds = ds
+        self.iter = ds.make_one_shot_iterator()
         self.fig, self.axes = plt.subplots(1, 1)
-        self.frames = self.df['frame'].unique()
 
     def update(self, t):
         self.axes.clear()
 
-        frame_range = self.frames[np.maximum(t - 10, 0):t]
-        target_df = self.df[self.df['frame'].isin(frame_range)]
-        print(np.unique(target_df['frame']))
+        obs, pred = self.iter.get_next()
+        obs, pred = obs[0].numpy(), pred[0].numpy()
+        obs = np.transpose(obs, axes=(1, 0, 2))
+        pred = np.transpose(pred, axes=(1, 0, 2))
 
-        for i, df_i in target_df.groupby('id'):
-            xy = np.array(df_i[['x', 'y']])
-            print(xy)
-            self.axes.plot(xy[:, 0], xy[:, 1])
+        for o in obs:
+            self.axes.plot(o[:, 0], o[:, 1])
+        for p in pred:
+            self.axes.plot(p[:, 0], p[:, 1])
 
         return self.axes,
 
 
 def main():
-    hotel_data_dir = Path(Path(__file__).parent / 'data/datasets/eth/hotel')
-    preprocessor = EthPreprosessor(hotel_data_dir, DatasetKind.hotel)
-    df = preprocessor.preprocess_frame_data()
+    tf.enable_eager_execution()
 
-    animator = TrajectoryAnimator(df)
-    ani = FuncAnimation(animator.fig, animator.update, interval=33)
+    parser = ArgumentParser()
+    parser.add_argument('--data_dirs', type=str, nargs='+')
+    data_dirs = parser.parse_args().data_dirs
+
+    ds = load_single_dataset(data_dirs, 8, 12)
+    animator = TrajectoryAnimator(ds)
+    ani = FuncAnimation(animator.fig, animator.update, interval=500)
     plt.show()
 
 
