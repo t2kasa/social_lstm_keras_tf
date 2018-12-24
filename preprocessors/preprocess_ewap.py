@@ -40,7 +40,7 @@ class EwapPreprocessor:
         return pos_df_pre
 
     def _normalize_pos_df(self, pos_df):
-        xy = np.array(pos_df[["px", "py"]])
+        xy = np.array(pos_df[["x", "y"]])
         xy = self._world_to_image_xy(xy, self.homography)
         xy = xy / self.image_size
 
@@ -75,8 +75,10 @@ def _read_homography_file(data_dir):
 
 
 def _read_obsmat_file(data_dir):
+    obs_cols = ["frame", "id", "px", "pz", "py", "vx", "vz", "vy"]
     obsmat_file = str(Path(data_dir, "obsmat.txt"))
-    obs_columns = ["frame", "id", "px", "pz", "py", "vx", "vz", "vy"]
-    obs_df = pd.DataFrame(np.genfromtxt(obsmat_file), columns=obs_columns)
+    obs_df = pd.DataFrame(np.genfromtxt(obsmat_file), columns=obs_cols)
+
     pos_df = obs_df[["frame", "id", "px", "py"]]
+    pos_df.columns = ["frame", "id", "x", "y"]
     return pos_df
