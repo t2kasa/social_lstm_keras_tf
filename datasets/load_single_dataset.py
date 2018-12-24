@@ -33,14 +33,15 @@ def load_single_dataset(data_dir, args):
     obs_true_seqs, pred_true_seqs = build_dataset(data_dir, image_size,
                                                   args.obs_len, args.pred_len)
 
+    n_seqs = len(obs_true_seqs)
     obs_ds = tf.data.Dataset.from_generator(
         _seqs_generator(obs_true_seqs), tf.float32,
-        tf.TensorShape([args.obs_len, None, 2])).batch(1)
+        tf.TensorShape([args.obs_len, None, 2]))
     pred_ds = tf.data.Dataset.from_generator(
-        _seqs_generator(obs_true_seqs), tf.float32,
-        tf.TensorShape([args.obs_len, None, 2])).batch(1)
+        _seqs_generator(pred_true_seqs), tf.float32,
+        tf.TensorShape([args.pred_len, None, 2]))
 
-    return obs_ds, pred_ds
+    return tf.data.Dataset.zip((obs_ds, pred_ds)).shuffle(n_seqs).batch(1)
 
 
 def _seqs_generator(seqs):
