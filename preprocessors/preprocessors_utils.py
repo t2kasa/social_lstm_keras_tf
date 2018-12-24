@@ -1,6 +1,6 @@
 from commons.general_utils import DatasetKind, _check_dataset_kind
 from preprocessors.eth_preprocessor import EthPreprosessor
-from preprocessors.ucy_preprocessor import UcyPreprocessor
+from preprocessors.preprocess_ucy import UcyPreprocessor
 
 
 def create_dataset_preprocessor(data_dir, dataset_kind):

@@ -4,10 +4,14 @@ import numpy as np
 import pandas as pd
 
 
+def preprocess_ucy(data_dir):
+    return UcyPreprocessor(data_dir).preprocess_frame_data()
+
+
 class UcyPreprocessor:
     ped_start_line_words = "Num of control points"
-    vsp_columns = ["x", "y", "frame", "gaze", "dummy1", "dummy2", "dummy3",
-                   "dummy4"]
+    # _1, _2, _3, and _4 are dummy columns, which are not used.
+    vsp_cols = ['x', 'y', 'frame', 'gaze', '_1', '_2', '_3', '_4']
 
     image_sizes = {
         'crowds_zara01': (720, 576),
@@ -39,7 +43,7 @@ class UcyPreprocessor:
             n_pos_i = int(lines[start_index].split()[0])
             pos_lines_i = lines[start_index + 1:start_index + 1 + n_pos_i]
             pos_df_raw_i = pd.DataFrame([line.split() for line in pos_lines_i],
-                                        columns=self.vsp_columns)
+                                        columns=self.vsp_cols)
             # in UCY dataset, pedestiran "id" is not given,
             # therefore add "id" column with serial number.
             pos_df_raw_i["id"] = i + 1
