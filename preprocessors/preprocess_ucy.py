@@ -51,19 +51,16 @@ class UcyPreprocessor:
             pos_df_raw.append(pos_df_raw_i)
 
         pos_df_raw = pd.concat(pos_df_raw)
-        # remain only (frame, id, x, y)
         pos_df_raw = pos_df_raw[['frame', 'id', 'x', 'y']].astype(np.float32)
         pos_df_raw = pos_df_raw.reset_index(drop=True)
 
-        # interpolate & normalize & thin out
-        pos_df_preprocessed = self.interpolate_pos_df(pos_df_raw)
-        pos_df_preprocessed = self.normalize_pos_df(pos_df_preprocessed,
-                                                    self.image_size)
-        pos_df_preprocessed = self.thin_out_pos_df(pos_df_preprocessed,
-                                                   self.frame_interval)
-        pos_df_preprocessed = pos_df_preprocessed.sort_values(['frame', 'id'])
+        # interpolate, thin out, and normalize
+        pos_df_pre = self.interpolate_pos_df(pos_df_raw)
+        pos_df_pre = self.thin_out_pos_df(pos_df_pre, self.frame_interval)
+        pos_df_pre = self.normalize_pos_df(pos_df_pre, self.image_size)
+        pos_df_pre = pos_df_pre.sort_values(['frame', 'id'])
 
-        return pos_df_preprocessed
+        return pos_df_pre
 
     @staticmethod
     def _get_vsp_file(data_dir):
