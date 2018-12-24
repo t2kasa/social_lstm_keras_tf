@@ -9,7 +9,7 @@ def preprocess_ucy(data_dir):
 
 
 class UcyPreprocessor:
-    ped_start_line_words = "Num of control points"
+    ped_start_line_words = 'Num of control points'
     # _1, _2, _3, and _4 are dummy columns, which are not used.
     vsp_cols = ['x', 'y', 'frame', 'gaze', '_1', '_2', '_3', '_4']
 
@@ -44,15 +44,15 @@ class UcyPreprocessor:
             pos_lines_i = lines[start_index + 1:start_index + 1 + n_pos_i]
             pos_df_raw_i = pd.DataFrame([line.split() for line in pos_lines_i],
                                         columns=self.vsp_cols)
-            # in UCY dataset, pedestiran "id" is not given,
-            # therefore add "id" column with serial number.
-            pos_df_raw_i["id"] = i + 1
+            # in UCY dataset, pedestiran 'id' is not given,
+            # therefore add 'id' column with serial number.
+            pos_df_raw_i['id'] = i + 1
 
             pos_df_raw.append(pos_df_raw_i)
 
         pos_df_raw = pd.concat(pos_df_raw)
         # remain only (frame, id, x, y)
-        pos_df_raw = pos_df_raw[["frame", "id", "x", "y"]].astype(np.float32)
+        pos_df_raw = pos_df_raw[['frame', 'id', 'x', 'y']].astype(np.float32)
         pos_df_raw = pos_df_raw.reset_index(drop=True)
 
         # interpolate & normalize & thin out
@@ -61,7 +61,7 @@ class UcyPreprocessor:
                                                     self.image_size)
         pos_df_preprocessed = self.thin_out_pos_df(pos_df_preprocessed,
                                                    self.frame_interval)
-        pos_df_preprocessed = pos_df_preprocessed.sort_values(["frame", "id"])
+        pos_df_preprocessed = pos_df_preprocessed.sort_values(['frame', 'id'])
 
         return pos_df_preprocessed
 
@@ -71,25 +71,25 @@ class UcyPreprocessor:
 
     @staticmethod
     def _read_lines(file):
-        with open(file, "r") as f:
+        with open(file, 'r') as f:
             return f.readlines()
 
     @staticmethod
     def interpolate_pos_df(pos_df):
         pos_df_interp = []
 
-        for pid, pid_df in pos_df.groupby("id"):
-            observed_frames = np.array(pid_df["frame"])
+        for pid, pid_df in pos_df.groupby('id'):
+            observed_frames = np.array(pid_df['frame'])
             frame_range = np.arange(observed_frames[0], observed_frames[-1] + 1)
 
-            x_interp = np.interp(frame_range, pid_df["frame"], pid_df["x"])
-            y_interp = np.interp(frame_range, pid_df["frame"], pid_df["y"])
+            x_interp = np.interp(frame_range, pid_df['frame'], pid_df['x'])
+            y_interp = np.interp(frame_range, pid_df['frame'], pid_df['y'])
 
             pos_df_interp.append(pd.DataFrame({
-                "frame": frame_range,
-                "id": pid,
-                "x": x_interp,
-                "y": y_interp
+                'frame': frame_range,
+                'id': pid,
+                'x': x_interp,
+                'y': y_interp
             }))
 
         pos_df_interp = pd.concat(pos_df_interp)
@@ -99,7 +99,7 @@ class UcyPreprocessor:
     def normalize_pos_df(pos_df, image_size):
         image_size = np.array(image_size)
 
-        xy = np.array(pos_df[["x", "y"]])
+        xy = np.array(pos_df[['x', 'y']])
         # originally (0, 0) is the center of the frame,
         # therefore move (0, 0) to top-left
         xy += image_size / 2
@@ -112,18 +112,18 @@ class UcyPreprocessor:
 
         # normalize position (x, y) respectively
         pos_df_norm = pd.DataFrame({
-            "frame": pos_df["frame"],
-            "id": pos_df["id"],
-            "x": xy[:, 0],
-            "y": xy[:, 1]
+            'frame': pos_df['frame'],
+            'id': pos_df['id'],
+            'x': xy[:, 0],
+            'y': xy[:, 1]
         })
         return pos_df_norm
 
     @staticmethod
     def thin_out_pos_df(pos_df, interval):
-        all_frames = pos_df["frame"].unique()
+        all_frames = pos_df['frame'].unique()
         remained_frames = np.arange(all_frames[0], all_frames[-1] + 1, interval)
-        remained_rows = pos_df["frame"].isin(remained_frames)
+        remained_rows = pos_df['frame'].isin(remained_frames)
 
         pos_df_thinned_out = pos_df[remained_rows]
         pos_df_thinned_out = pos_df_thinned_out.reset_index(drop=True)
