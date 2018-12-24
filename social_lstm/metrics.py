@@ -1,4 +1,9 @@
 import numpy as np
+import tensorflow as tf
+
+
+def compute_abe_tf(pos_true, pos_pred):
+    return tf.reduce_mean(tf.square(pos_true - pos_pred))
 
 
 def compute_abe(x_true, x_pred):
