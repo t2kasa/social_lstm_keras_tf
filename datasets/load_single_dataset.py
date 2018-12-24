@@ -6,18 +6,6 @@ import tensorflow as tf
 from preprocessors.preprocess_data import preprocess_data
 
 
-def build_obs_pred_sequences(data_dir, obs_len, pred_len):
-    pos_df = preprocess_data(data_dir)
-    all_sequences = extract_sequences(pos_df, obs_len + pred_len)
-
-    obs_true_seqs, pred_true_seqs = [], []
-    for seq in all_sequences:
-        obs_true_seqs.append(tf.cast(seq[:obs_len], tf.float32))
-        pred_true_seqs.append(tf.cast(seq[obs_len:], tf.float32))
-
-    return obs_true_seqs, pred_true_seqs
-
-
 def load_single_dataset(data_dir, args):
     obs_true_seqs, pred_true_seqs = build_obs_pred_sequences(
         data_dir, args.obs_len, args.pred_len)
@@ -31,6 +19,18 @@ def load_single_dataset(data_dir, args):
         tf.TensorShape([args.pred_len, None, 2]))
 
     return tf.data.Dataset.zip((obs_ds, pred_ds)).shuffle(n_seqs).batch(1)
+
+
+def build_obs_pred_sequences(data_dir, obs_len, pred_len):
+    pos_df = preprocess_data(data_dir)
+    all_sequences = extract_sequences(pos_df, obs_len + pred_len)
+
+    obs_true_seqs, pred_true_seqs = [], []
+    for seq in all_sequences:
+        obs_true_seqs.append(tf.cast(seq[:obs_len], tf.float32))
+        pred_true_seqs.append(tf.cast(seq[obs_len:], tf.float32))
+
+    return obs_true_seqs, pred_true_seqs
 
 
 def extract_sequences(frame_df, seq_len):
