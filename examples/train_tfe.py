@@ -34,10 +34,11 @@ def main():
     tf.enable_eager_execution()
     args = load_args()
 
-    train_ds_list = [load_single_dataset(d, args) for d in args.train_data_dirs]
-    # test_ds_list = [load_single_dataset(d, args) for d in args.test_data_dirs]
+    train_ds = load_single_dataset(args.train_data_dirs, args.obs_len,
+                                   args.pred_len)
+    test_ds = load_single_dataset(args.test_data_dirs, args.obs_len,
+                                  args.pred_len)
 
-    train_ds = train_ds_list[0]
     optimizer = tf.train.RMSPropOptimizer(learning_rate=args.learning_rate)
 
     social_lstm = SocialLSTM(args.pred_len, args.cell_side, args.n_side_cells,
