@@ -1,4 +1,6 @@
+import json
 from argparse import ArgumentParser
+from datetime import datetime
 from pathlib import Path
 
 import tensorflow as tf
@@ -9,7 +11,9 @@ from social_lstm.trainer import Trainer
 
 
 def load_args():
-    default_out_dir = Path(Path(__file__).parent, '../data/outputs').absolute()
+    now_str = datetime.now().strftime('%Y%m%d%H%M%S')
+    default_out_dir = Path(Path(__file__).parent,
+                           f'../data/outputs/{now_str}').absolute().as_posix()
 
     parser = ArgumentParser()
     # train params
@@ -34,22 +38,29 @@ def load_args():
     return args
 
 
+def _save_args_file(args, out_dir, out_file_name='train_config.json'):
+    with open(Path(out_dir, out_file_name), 'w') as f:
+        json.dump(args.__dict__, f, sort_keys=True, indent=4)
+
+
 def main():
     tf.enable_eager_execution()
     args = load_args()
 
-    train_ds = load_single_dataset(args.train_data_dirs, args.obs_len,
-                                   args.pred_len)
-    test_ds = load_single_dataset(args.test_data_dirs, args.obs_len,
-                                  args.pred_len)
-    optimizer = tf.train.RMSPropOptimizer(learning_rate=args.learning_rate)
-
     model = SocialLSTM(args.pred_len, args.cell_side, args.n_side_cells,
                        args.lstm_dim, args.emb_dim)
+    optimizer = tf.train.RMSPropOptimizer(learning_rate=args.learning_rate)
 
-    trainer = Trainer(model, optimizer, train_ds.take(6), test_ds.take(6),
+    train_ds = load_single_dataset(
+        args.train_data_dirs, args.obs_len, args.pred_len)
+    test_ds = load_single_dataset(
+        args.test_data_dirs, args.obs_len, args.pred_len)
+
+    trainer = Trainer(model, optimizer, train_ds.take(1), test_ds.take(1),
                       args.n_epochs, args.out_dir)
     trainer.run()
+
+    _save_args_file(args, args.out_dir)
 
 
 if __name__ == '__main__':
