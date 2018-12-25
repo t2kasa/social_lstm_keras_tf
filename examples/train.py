@@ -1,6 +1,5 @@
 import json
 from argparse import ArgumentParser
-from datetime import datetime
 from pathlib import Path
 
 import tensorflow as tf
@@ -11,9 +10,8 @@ from social_lstm.trainer import Trainer
 
 
 def load_args():
-    now_str = datetime.now().strftime('%Y%m%d%H%M%S')
     default_out_dir = Path(Path(__file__).parent,
-                           f'../data/outputs/{now_str}').absolute().as_posix()
+                           '../data/outputs').absolute().as_posix()
 
     parser = ArgumentParser()
     # train params
