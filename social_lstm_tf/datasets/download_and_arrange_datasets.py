@@ -29,6 +29,7 @@ def _download_and_arrange_ewap_dataset(datasets_dir):
 
 def _download_and_arrange_ucy_dataset(datasets_dir):
     ucy_dir = Path(datasets_dir, 'ucy_dataset')
+    ucy_dir.mkdir(parents=True, exist_ok=True)
     _download_and_unpack(_ucy_zara_url, ucy_dir)
     _download_and_unpack(_ucy_univ_url, ucy_dir)
 
