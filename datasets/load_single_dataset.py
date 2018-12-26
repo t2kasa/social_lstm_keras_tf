@@ -13,7 +13,7 @@ def load_single_dataset(data_dirs, obs_len, pred_len, shuffle=True,
     :param str|list[str] data_dirs: one or more data directories.
     :param int obs_len: observation sequence length.
     :param int pred_len: prediction sequence length.
-    :return: a single dataset.
+    :return: a single dataset and the number of samples.
     """
     if isinstance(data_dirs, str):
         data_dirs = [data_dirs]
@@ -22,7 +22,7 @@ def load_single_dataset(data_dirs, obs_len, pred_len, shuffle=True,
     obs_seqs, pred_seqs = zip(*seqs)
     obs_seqs, pred_seqs = sum(obs_seqs, []), sum(pred_seqs, [])
 
-    n_seqs = len(obs_seqs)
+    n_samples = len(obs_seqs)
     obs_ds = tf.data.Dataset.from_generator(
         _seqs_generator(obs_seqs), tf.float32,
         tf.TensorShape([obs_len, None, 2]))
@@ -32,9 +32,9 @@ def load_single_dataset(data_dirs, obs_len, pred_len, shuffle=True,
 
     ds = tf.data.Dataset.zip((obs_ds, pred_ds))
     if shuffle:
-        ds = ds.shuffle(n_seqs)
+        ds = ds.shuffle(n_samples)
     ds = ds.batch(batch_size)
-    return ds
+    return ds, n_samples
 
 
 def build_obs_pred_sequences(data_dir, obs_len, pred_len):
