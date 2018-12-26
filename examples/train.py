@@ -13,7 +13,7 @@ from social_lstm_tf.social_lstm.losses import compute_loss
 from social_lstm_tf.social_lstm.social_lstm import SocialLSTM
 
 
-def load_args():
+def _load_args():
     parser = ArgumentParser()
     # train params
     parser.add_argument('--n_epochs', type=int, required=True)
@@ -45,7 +45,7 @@ def _save_args_file(args, out_dir, out_file_name='train_config.json'):
 
 def main():
     tf.enable_eager_execution()
-    args = load_args()
+    args = _load_args()
 
     # first save a configuration.
     _save_args_file(args, args.out_dir)
