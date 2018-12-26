@@ -1,8 +1,11 @@
 import json
+import sys
 from argparse import ArgumentParser
 from pathlib import Path
 
 import tensorflow as tf
+
+sys.path.append((Path(__file__).parent / '..').absolute().as_posix())  # NOQA
 
 from social_lstm_tf.datasets import load_single_dataset
 from social_lstm_tf.social_lstm import metrics
@@ -15,7 +18,7 @@ def load_args():
     # train params
     parser.add_argument('--n_epochs', type=int, required=True)
     parser.add_argument('--learning_rate', type=float, default=0.003)
-    parser.add_argument('--out_dir', type=str, default='../data/outputs')
+    parser.add_argument('--out_dir', type=str, required=True)
 
     # model params
     parser.add_argument('--obs_len', type=int, required=True)
