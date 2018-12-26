@@ -1,20 +1,24 @@
-# social_lstm_keras_tf
+# social_lstm_tf
 
 Social LSTM implementation with TensorFlow.
 
 Important Notes:
 
 * **Unofficial and experimental implementation.**
-* (2018/12/24) I have been updating my codes to correctly train and evaluate Social LSTM.
+* (2018/12/27) I have been updating my codes.
+
+I rewrite all of my codes. Therefore I have changed the license to MIT License.
 
 ## Requirements
 
-Works only Python 3. My environment is built on [Anaconda](https://www.anaconda.com/download/). you Install it and the following packages.
+Works only Python 3. My environment is built on [Anaconda](https://www.anaconda.com/download/). Please install it and the following packages.
 
-* TensorFlow 1.x
-* [patool](https://github.com/wummel/patool)
+* [TensorFlow 1.12.0](https://github.com/tensorflow/tensorflow)
+* [patool](https://github.com/wummel/patool): to extract .rar file
 
-## Usage
+## :construction: Usage :construction:
+
+The following steps are not correctly updated.
 
 ### 1. Preparation
 
@@ -23,7 +27,6 @@ Download datasets by:
 cd examples
 python prepare_dataset.py
 ```
-
 
 Set `dataset` attribute of the config files in `configs/`.
 
@@ -43,15 +46,7 @@ python train_social_model.py --trained_model_config path/to/config.json --traine
 
 ## Restrictions
 
-* work only on batch size = 1
-* require much RAM (use almost all 16GB in my environment)
-
-## TODO
-
-* [ ] Clean up experimental implementation
-* [ ] Add trained sample for demo
-* [ ] Occupancy map implementation
-
+**The batch size must be 1.** It is difficult for me to handle trajectory samples having different shape in a batch.
 
 ## References
 
