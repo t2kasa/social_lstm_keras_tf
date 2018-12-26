@@ -7,7 +7,7 @@ import tensorflow as tf
 from datasets.load_single_dataset import load_single_dataset
 from social_lstm import metrics
 from social_lstm.losses import compute_loss
-from social_lstm.my_social_model_tfe import SocialLSTM
+from social_lstm.social_lstm import SocialLSTM
 
 
 def load_args():
@@ -58,8 +58,8 @@ def main():
         Path(args.out_dir, 'logs').as_posix())
     model.compile(optimizer=optimizer, loss=compute_loss,
                   metrics=[metrics.abe, metrics.fde])
-    model.fit(x=train_ds, steps_per_epoch=n_train_samples,
-              validation_data=test_ds, validation_steps=n_test_samples,
+    model.fit(x=train_ds, steps_per_epoch=n_train_samples // 100,
+              validation_data=test_ds, validation_steps=n_test_samples // 100,
               callbacks=[tensorboard])
 
     # save the trained model weights and configuration.
