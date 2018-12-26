@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from social_lstm.tfe_normal_sampler import normal2d_log_pdf
+from social_lstm_tf.social_lstm.tfe_normal_sampler import normal2d_log_pdf
 
 
 def compute_loss(pos_future_true, o_future_pred):

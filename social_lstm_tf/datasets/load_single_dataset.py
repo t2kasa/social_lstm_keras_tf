@@ -3,7 +3,7 @@ from functools import reduce
 import numpy as np
 import tensorflow as tf
 
-from preprocessors.preprocess_data import preprocess_data
+from social_lstm_tf.preprocessors.preprocess_data import preprocess_data
 
 
 def load_single_dataset(data_dirs, obs_len, pred_len, shuffle=True,

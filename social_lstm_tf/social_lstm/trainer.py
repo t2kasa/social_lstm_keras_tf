@@ -2,9 +2,9 @@ from pathlib import Path
 
 import tensorflow as tf
 
-from social_lstm.losses import compute_loss
-from social_lstm.metrics import compute_abe_tf
-from social_lstm.tfe_normal_sampler import normal2d_sample
+from social_lstm_tf.social_lstm.losses import compute_loss
+from social_lstm_tf.social_lstm.metrics import compute_abe_tf
+from social_lstm_tf.social_lstm.tfe_normal_sampler import normal2d_sample
 
 
 class Trainer:

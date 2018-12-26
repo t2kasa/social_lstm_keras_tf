@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from preprocessors.ewap_preprocessor import EwapPreprocessor
-from preprocessors.ucy_preprocessor import UcyPreprocessor
-from preprocessors.utils import ucy_data_dir_names, ewap_data_dir_names
+from social_lstm_tf.preprocessors.ewap_preprocessor import EwapPreprocessor
+from social_lstm_tf.preprocessors.ucy_preprocessor import UcyPreprocessor
+from social_lstm_tf.preprocessors.utils import ucy_data_dir_names, ewap_data_dir_names  # NOQA
 
 
 def preprocess_data(data_dir):

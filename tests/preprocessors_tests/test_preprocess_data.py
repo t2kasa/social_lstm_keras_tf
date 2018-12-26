@@ -1,9 +1,9 @@
 import tempfile
 from pathlib import Path
 
-from datasets.utils import download_and_arrange_datasets
-from preprocessors import preprocess_data
-from preprocessors.preprocess_data import preprocess_data
+from social_lstm_tf.datasets import download_and_arrange_datasets
+from social_lstm_tf.preprocessors import preprocess_data
+from social_lstm_tf.preprocessors.preprocess_data import preprocess_data
 
 
 def test_preprocess_data():
