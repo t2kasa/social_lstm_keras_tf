@@ -48,16 +48,22 @@ def main():
                        args.lstm_dim, args.emb_dim)
     optimizer = tf.train.RMSPropOptimizer(learning_rate=args.learning_rate)
 
+    # prepare datasets
     train_ds, n_train_samples = load_single_dataset(
         args.train_data_dirs, args.obs_len, args.pred_len)
     test_ds, n_test_samples = load_single_dataset(
         args.test_data_dirs, args.obs_len, args.pred_len)
 
+    tensorboard = tf.keras.callbacks.TensorBoard(
+        Path(args.out_dir, 'logs').as_posix())
     model.compile(optimizer=optimizer, loss=compute_loss,
                   metrics=[metrics.abe, metrics.fde])
-    model.fit(x=train_ds, steps_per_epoch=1,
-              validation_data=test_ds, validation_steps=1)
+    model.fit(x=train_ds, steps_per_epoch=n_train_samples,
+              validation_data=test_ds, validation_steps=n_test_samples,
+              callbacks=[tensorboard])
 
+    # save the trained model weights and configuration.
+    model.save_weights(Path(args.out_dir, 'saved_model.h5').as_posix())
     _save_args_file(args, args.out_dir)
 
 
