@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from social_lstm.grid_tfe import compute_social_tensor
+from social_lstm.compute_social_tensor import compute_social_tensor
 from social_lstm.tfe_normal_sampler import normal2d_sample
 
 _out_dim = 5
@@ -72,8 +72,6 @@ class SocialLSTM(tf.keras.Model):
 
         # (pred_len, 1, n_pids, out_dim) => (1, pred_len, n_pids, out_dim)
         o_pred = _stack_permute_axis_zero(o_pred)
-        # (1, pred_len, n_pids, out_dim) => (pred_len, n_pids, out_dim)
-        o_pred = o_pred[0]
         return o_pred
 
     def _perform_step_t(self, x_t, prev_h_t, prev_c_t):

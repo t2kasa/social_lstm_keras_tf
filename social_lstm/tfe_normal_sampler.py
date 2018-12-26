@@ -1,20 +1,17 @@
 import tensorflow as tf
 import tensorflow_probability as tfp
-from tensorflow.contrib.keras.api.keras.layers import Multiply
 
 
 def build_mvn(outputs) -> tfp.distributions.MultivariateNormalTriL:
-    """
+    """Builds multivariate normal distributions (mvns).
     :param outputs: (n_samples, 5)
-    :return
+    :return: the mvns.
     """
-
-    # mean of x and y
+    # mean
     x_mean = outputs[:, 0]
     y_mean = outputs[:, 1]
 
-    # std of x and y
-    # std is must be 0 or positive
+    # std must be 0 or positive
     x_std = tf.exp(outputs[:, 2])
     y_std = tf.exp(outputs[:, 3])
 
@@ -27,7 +24,7 @@ def build_mvn(outputs) -> tfp.distributions.MultivariateNormalTriL:
 
     x_var = tf.square(x_std)
     y_var = tf.square(y_std)
-    xy_cor = Multiply()([x_std, y_std, cor])
+    xy_cor = x_std * y_std * cor
 
     cov = tf.stack([x_var, xy_cor, xy_cor, y_var], axis=0)
     cov = tf.transpose(cov, perm=(1, 0))
