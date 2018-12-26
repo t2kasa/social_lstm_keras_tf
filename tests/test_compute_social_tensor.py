@@ -21,13 +21,13 @@ def test_compute_social_tensor():
 
     cell_side = 0.5
     n_grid_cells = 2
+    n_states = 2
 
     social_tensors = compute_social_tensor(positions, hidden_states, cell_side,
                                            n_grid_cells)
-    expected_shape = tf.constant([5, 2, 2, 2])
-    expected_first_social_tensor = tf.constant([[[0.375, 0.375],
-                                                 [0.0, 0.0]],
-                                                [[0.25, 0.75],
-                                                 [0.0, 0.0]]])
+    expected_shape = tf.constant([5, n_grid_cells * n_grid_cells * n_states])
+    expected_first_social_tensor = tf.constant(
+        [0.375, 0.375, 0.0, 0.0, 0.25, 0.75, 0.0, 0.0])
+    print(social_tensors[0].numpy())
     tf.assert_equal(tf.shape(social_tensors), expected_shape)
     tf.assert_equal(social_tensors[0], expected_first_social_tensor)
