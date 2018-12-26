@@ -4,10 +4,10 @@ from pathlib import Path
 
 import tensorflow as tf
 
-from datasets.load_single_dataset import load_single_dataset
-from social_lstm import metrics
-from social_lstm.losses import compute_loss
-from social_lstm.social_lstm import SocialLSTM
+from social_lstm_tf.datasets import load_single_dataset
+from social_lstm_tf.social_lstm import metrics
+from social_lstm_tf.social_lstm.losses import compute_loss
+from social_lstm_tf.social_lstm.social_lstm import SocialLSTM
 
 
 def load_args():

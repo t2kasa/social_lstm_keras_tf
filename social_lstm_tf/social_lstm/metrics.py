@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from social_lstm.tfe_normal_sampler import normal2d_sample
+from social_lstm_tf.social_lstm.tfe_normal_sampler import normal2d_sample
 
 
 def abe(pos_future_true, o_future_pred):

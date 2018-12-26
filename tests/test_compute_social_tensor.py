@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from social_lstm.compute_social_tensor import compute_social_tensor
+from social_lstm_tf.social_lstm import compute_social_tensor
 
 
 def test_compute_social_tensor():

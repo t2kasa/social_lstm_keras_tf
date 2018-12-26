@@ -9,7 +9,7 @@ import numpy as np
 import tensorflow as tf
 
 from matplotlib.animation import FuncAnimation
-from datasets.load_single_dataset import load_single_dataset
+from social_lstm_tf.datasets import load_single_dataset
 
 
 class TrajectoryAnimator:

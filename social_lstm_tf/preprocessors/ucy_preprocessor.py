@@ -3,8 +3,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from preprocessors.utils import interpolate_pos_df
-from preprocessors.utils import thin_out_pos_df
+from social_lstm_tf.preprocessors.utils import interpolate_pos_df
+from social_lstm_tf.preprocessors.utils import thin_out_pos_df
 
 
 class UcyPreprocessor:
