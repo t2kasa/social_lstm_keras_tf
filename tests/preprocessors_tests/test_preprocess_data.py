@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 
-from datasets.utils import download_and_arrange_datasets
+from datasets import download_and_arrange_datasets
 from preprocessors import preprocess_data
 from preprocessors.preprocess_data import preprocess_data
 
