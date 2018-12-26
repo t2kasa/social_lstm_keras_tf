@@ -1,53 +1,31 @@
-import numpy as np
 import tensorflow as tf
 
-
-def compute_abe_tf(pos_true, pos_pred):
-    return tf.reduce_mean(tf.square(pos_true - pos_pred))
+from social_lstm.tfe_normal_sampler import normal2d_sample
 
 
-def compute_abe(x_true, x_pred):
-    """Compute Average displacement error (ade).
+def abe(pos_future_true, o_future_pred):
+    """Computes Average Displacement Error (ABE).
 
-    In the original paper, ade is mean square error (mse) over all estimated
-    points of a trajectory and the true points.
-
-    :param x_true: (n_samples, seq_len, max_n_peds, 3)
-    :param x_pred: (n_samples, seq_len, max_n_peds, 3)
-    :return: Average displacement error
+    :param o_future_pred: (batch_size, seq_len, n_pedestrians, 5)
+    :param pos_future_true: (batch_size, seq_len, n_pedestrians, 2)
+    :return: the abe.
     """
-    # pid != 0 means there is the person at the frame.
-    not_exist_pid = 0
-    exist_elements = x_true[..., 0] != not_exist_pid
+    pos_future_true = tf.reshape(pos_future_true, [-1, 2])
+    o_future_pred = tf.reshape(o_future_pred, [-1, 5])
 
-    # extract pedestrians positions (x, y), then compute difference
-    pos_true = x_true[..., 1:]
-    pos_pred = x_pred[..., 1:]
-    diff = pos_true - pos_pred
-
-    # ade = average displacement error
-    ade = np.mean(np.square(diff[exist_elements]))
-    return ade
+    pos_future_pred = normal2d_sample(o_future_pred)
+    return tf.reduce_mean(tf.square(pos_future_true - pos_future_pred))
 
 
-def compute_fde(x_true, x_pred):
-    """Compute Final displacement error (fde).
+def fde(pos_future_true, o_future_pred):
+    """Computes Final Displacement Error (FBE).
 
-    In the original paper, ade is mean square error (mse) over all estimated
-    points of a trajectory and the true points.
-
-    :param x_true: (n_samples, seq_len, max_n_peds, 3)
-    :param x_pred: (n_samples, seq_len, max_n_peds, 3)
-    :return: Average displacement error
+    :param o_future_pred: (batch_size, seq_len, n_pedestrians, 5)
+    :param pos_future_true: (batch_size, seq_len, n_pedestrians, 2)
+    :return: the fde.
     """
-    # pid != 0 means there is the person at the frame.
-    not_exist_pid = 0
-    exist_final_elements = x_true[:, -1, :, 0] != not_exist_pid
+    pos_future_true = tf.reshape(pos_future_true[:, -1, :, :], [-1, 2])
+    o_future_pred = tf.reshape(o_future_pred[:, -1, :, :], [-1, 5])
 
-    # extract pedestrians positions (x, y), then compute difference
-    pos_final_true = x_true[:, -1, :, 1:]
-    pos_final_pred = x_pred[:, -1, :, 1:]
-    diff = pos_final_true - pos_final_pred
-
-    fde = np.mean(np.square(diff[exist_final_elements]))
-    return fde
+    pos_future_pred = normal2d_sample(o_future_pred)
+    return tf.reduce_mean(tf.square(pos_future_true - pos_future_pred))

@@ -5,19 +5,17 @@ from pathlib import Path
 import tensorflow as tf
 
 from datasets.load_single_dataset import load_single_dataset
+from social_lstm import metrics
+from social_lstm.losses import compute_loss
 from social_lstm.my_social_model_tfe import SocialLSTM
-from social_lstm.trainer import Trainer
 
 
 def load_args():
-    default_out_dir = Path(Path(__file__).parent,
-                           '../data/outputs').absolute().as_posix()
-
     parser = ArgumentParser()
     # train params
     parser.add_argument('--n_epochs', type=int, required=True)
     parser.add_argument('--learning_rate', type=float, default=0.003)
-    parser.add_argument('--out_dir', type=str, default=default_out_dir)
+    parser.add_argument('--out_dir', type=str, default='../data/outputs')
 
     # model params
     parser.add_argument('--obs_len', type=int, required=True)
@@ -37,7 +35,8 @@ def load_args():
 
 
 def _save_args_file(args, out_dir, out_file_name='train_config.json'):
-    with open(Path(out_dir, out_file_name), 'w') as f:
+    Path(out_dir).mkdir(parents=True, exist_ok=True)
+    with open(Path(out_dir, out_file_name).as_posix(), 'w') as f:
         json.dump(args.__dict__, f, sort_keys=True, indent=4)
 
 
@@ -49,14 +48,15 @@ def main():
                        args.lstm_dim, args.emb_dim)
     optimizer = tf.train.RMSPropOptimizer(learning_rate=args.learning_rate)
 
-    train_ds = load_single_dataset(
+    train_ds, n_train_samples = load_single_dataset(
         args.train_data_dirs, args.obs_len, args.pred_len)
-    test_ds = load_single_dataset(
+    test_ds, n_test_samples = load_single_dataset(
         args.test_data_dirs, args.obs_len, args.pred_len)
 
-    trainer = Trainer(model, optimizer, train_ds.take(1), test_ds.take(1),
-                      args.n_epochs, args.out_dir)
-    trainer.run()
+    model.compile(optimizer=optimizer, loss=compute_loss,
+                  metrics=[metrics.abe, metrics.fde])
+    model.fit(x=train_ds, steps_per_epoch=1,
+              validation_data=test_ds, validation_steps=1)
 
     _save_args_file(args, args.out_dir)
 
