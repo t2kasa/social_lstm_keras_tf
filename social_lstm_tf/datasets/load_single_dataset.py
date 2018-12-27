@@ -33,7 +33,7 @@ def load_single_dataset(data_dirs, obs_len, pred_len, shuffle=True,
     ds = tf.data.Dataset.zip((obs_ds, pred_ds))
     if shuffle:
         ds = ds.shuffle(n_samples)
-    ds = ds.batch(batch_size)
+    ds = ds.batch(batch_size).repeat()
     return ds, n_samples
 
 
