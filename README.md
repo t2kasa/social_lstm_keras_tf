@@ -1,4 +1,4 @@
-# social_lstm_tf
+# :construction: social_lstm_tf :construction:
 
 Social LSTM implementation with TensorFlow.
 
@@ -6,8 +6,7 @@ Important Notes:
 
 * **Unofficial and experimental implementation.**
 * (2018/12/27) I have been updating my codes.
-
-I rewrite all of my codes. Therefore I have changed the license to MIT License.
+* I have been rewriting all of my codes without any other codes. Therefore I have changed the repo license to MIT License.
 
 ## Requirements
 
