@@ -1,5 +1,7 @@
 # social_lstm_keras_tf
 
+**2019/01/22 - now Please See `renew` branch.**
+
 Social LSTM implementation with Keras (and TensorFlow as backend)  
 NOTE: experimental implementation
 
