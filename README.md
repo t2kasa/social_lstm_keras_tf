@@ -1,12 +1,14 @@
 # :construction: social_lstm_tf :construction:
 
 Social LSTM implementation with TensorFlow.
+* Unofficial and experimental implementation.
+* I have been rewriting all of this repo codes (`renew` branch). Please see the next section, IMPORTANT NOTES.
 
-Important Notes:
+## IMPORTANT NOTES
 
-* **Unofficial and experimental implementation.**
-* (2018/12/27) I have been updating my codes.
-* I have been rewriting all of my codes without any other codes. Therefore I have changed the repo license to MIT License.
+I cannot valid prediction results yet and the reason is not clear for me.
+So I decided to rewrite all of this repo codes and use TensorFlow eager execution to be easy to debug.
+If anyone find or know the reason or something to related problems, please create issues or contact me.
 
 ## Requirements
 
